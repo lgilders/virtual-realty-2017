@@ -11,7 +11,9 @@ backupbuddy_core::verifyAjaxAccess();
  *	@return		null
  */
 
-$root = ABSPATH . urldecode( pb_backupbuddy::_POST( 'dir' ) );
+//error_log( 'dir:' . pb_backupbuddy::_POST( 'dir' ) );
+$root = substr( ABSPATH, 0, strlen( ABSPATH ) - 1 ) . '/' . ltrim( urldecode( pb_backupbuddy::_POST( 'dir' ) ), '/\\' );
+//error_log( 'root:' . $root );
 
 if( file_exists( $root ) ) {
 	$files = scandir( $root );

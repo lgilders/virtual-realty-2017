@@ -9,6 +9,7 @@ class backupbuddy_core {
 	public static $warn_plugins = array(
 		'w3-total-cache.php' => 'W3 Total Cache',
 		'wp-cache.php' => 'WP Super Cache',
+		'wordfence.php' => 'Wordfence',
 	);
 	
 	
@@ -229,9 +230,16 @@ class backupbuddy_core {
 		$uploads_dirs = wp_upload_dir();
 		return $uploads_dirs['basedir'] . '/backupbuddy_backups/';
 	} // End _getBackupDirectoryDefault().
-
-
-
+	
+	
+	
+	// Takes a profile custom root path and normalizes it, taking into account /./, /../, etc.
+	public static function get_normalized_custom_root( $path ) {
+		return realpath( ABSPATH . $path ) . '/';
+	} // get_normalized_custom_root().
+	
+	
+	
 	/*	get_directory_exclusions()
 	 *	
 	 *	Get sanitized directory exclusions. Exclusions are relative to site root (ABSPATH). See important note below!
@@ -246,56 +254,143 @@ class backupbuddy_core {
 		
 		$profile = array_merge( pb_backupbuddy::settings( 'profile_defaults' ), $profile );
 		
-		// Get initial array.
-		if ( ! is_array( $profile['excludes'] ) ) {
-			$exclusions = trim( $profile['excludes'] ); // Trim string.
-			$exclusions = preg_split('/\n|\r|\r\n/', $exclusions ); // Break into array on any type of line ending.
-		} else {
-			$exclusions = $profile['excludes'];
+		// No trailing slash $abspath.
+		$abspath = rtrim( ABSPATH, '/' );
+		
+		// Custom root (if any).
+		$backupRoot = ABSPATH; // Default root.
+		if ( isset( $profile['custom_root'] ) && ( '' != $profile['custom_root'] ) ) {
+			pb_backupbuddy::status( 'details', 'Exclusion custom root (raw): ' . $profile['custom_root'] );
+			$backupRoot = backupbuddy_core::get_normalized_custom_root( $profile['custom_root'] );
 		}
 		
-		$exclusions = array_merge( $exclusions, backupbuddy_constants::$HARDCODED_DIR_EXCLUSIONS );
-		
-		// Backup dir can be custom set and even migrated over to have weird slash mismatch issues. Sanitize it.
-		$backupDir = '/' . ltrim( str_replace( ABSPATH, '', self::getBackupDirectory() ), '\\/' ); // BackupBuddy backup storage directory. Normally this should be all good.
-		pb_backupbuddy::status( 'details', 'Initially calculated relative backup storage directory: `' . $backupDir . '.' );
-		$normedBackupDir = str_replace( '\\', '/', $backupDir );
-		$normedABSPATH = str_replace( '\\', '/', ABSPATH );
-		if ( FALSE !== ( stristr( $normedBackupDir, $normedABSPATH ) ) ) { // ABSPATH still exists in the path due to some weird slash direction mismatch. Try to yank it out.
-			pb_backupbuddy::status( 'details', 'ABSPATH `' . ABSPATH . '` still found backup directory path `' . $normedBackupDir . '` so it is still not relative. Using normalized ABSPATH `' . $normedABSPATH  . '` and normalized backup directory `' . $normedBackupDir . '` to make relative.' );
-			$backupDir = str_replace( $normedABSPATH, $normedBackupDir, $backupDir );
+		// Handle smart profile types.
+		if ( $profile['type'] == 'media' ) {
+			$backupRoot = backupbuddy_core::get_media_root();
+		} elseif ( $profile['type'] == 'themes' ) {
+			$backupRoot = backupbuddy_core::get_themes_root();
+		} elseif ( $profile['type'] == 'plugins' ) {
+			$backupRoot = backupbuddy_core::get_plugins_root();
 		}
-		$exclusions[] = $backupDir;
 		
+		$excludes = array();
 		
-		$exclusions[] = '/' . ltrim( str_replace( ABSPATH, '', self::getLogDirectory() ), '\\/' ); // BackupBuddy logs & fileoptions data.
-		$exclusions[] = '/importbuddy/'; // Exclude importbuddy directory in root.
-		$exclusions[] = '/importbuddy.php'; // Exclude importbuddy.php script in root.
+		// Hardcoded exclusions, relative to $abspath.
+		foreach( backupbuddy_constants::$HARDCODED_DIR_EXCLUSIONS as $exclusion ) {
+			$excludes[] = $abspath . $exclusion;
+		}
+		
+		// Backup storage directory.
+		$excludes[] = self::getBackupDirectory();
+		
+		// Log directory.
+		$excludes[] = self::getLogDirectory();
+		
+		// Media/themes/plugins excluded option.
+		if ( isset( $profile['exclude_media'] ) && ( '1' == $profile['exclude_media'] ) ) {
+			$excludes[] = backupbuddy_core::get_media_root();
+		}
+		if ( isset( $profile['exclude_themes'] ) && ( '1' == $profile['exclude_themes'] ) ) {
+			$excludes[] = backupbuddy_core::get_themes_root();
+		}
+		if ( isset( $profile['exclude_plugins'] ) && ( '1' == $profile['exclude_plugins'] ) ) {
+			$excludes[] = backupbuddy_core::get_plugins_root();
+		}
 		
 		// Exclude all temp directories within backupbuddy_temp, except any subdirectories containing the serial specified (if any).
-		$tempDirs = glob( self::getTempDirectory() . '*', GLOB_ONLYDIR );
+		$tempDirs = @glob( self::getTempDirectory() . '*', GLOB_ONLYDIR );
 		if ( ! is_array( $tempDirs ) ) {
 			$tempDirs = array();
 		}
 		foreach( $tempDirs as $tempDir ) {
 			if ( ( '' == $serial ) || ( false === strstr( $tempDir, $serial ) ) ) { // If no specific serial supplied OR this dir does not contain the serial, exclude it.
 				pb_backupbuddy::status( 'details', 'Excluding additional temp directory subdir: `' . $tempDir . '`.' );
-				$exclusions[] = '/' . trim( str_replace( ABSPATH, '', $tempDir ), '\\/' ) . '/';
+				$excludes[] = $tempDir;
 			}
+		}
+		
+		// Profile-specific OR global excludes.
+		if ( ! is_array( $profile['excludes'] ) ) {
+			$profileExclusions = trim( $profile['excludes'] ); // Trim string.
+			if ( '-1' == $profileExclusions ) { // Use default global exclusions instead of profile.
+				$profileExclusions = pb_backupbuddy::$options['profiles'][0]['excludes'];
+				$profileExclusions = preg_split('/\n|\r|\r\n/', $profileExclusions ); // Break into array on any type of line ending.
+				pb_backupbuddy::status( 'details', 'Profile inheriting global exclusions.' );
+				foreach( $profileExclusions as &$profileExclusion ) { // Handle possible path abose $abspath in custom root.
+					$profileExclusion = trim( $profileExclusion );
+					if ( '' === $profileExclusion ) {
+						continue;
+					}
+					$profileExclusion = $abspath . $profileExclusion;
+				}
+			} else {
+				$profileExclusions = preg_split('/\n|\r|\r\n/', $profileExclusions ); // Break into array on any type of line ending.
+				foreach( $profileExclusions as &$profileExclusion ) {
+					if ( '' == $profileExclusion ) {
+						continue;
+					}
+					$profileExclusion = rtrim( $backupRoot, '/' ) . $profileExclusion;
+				}
+			}
+		} else {
+			$profileExclusions = $profile['excludes'];
+		}
+		$excludes = array_merge( $excludes, $profileExclusions );
+		
+		// Process exclusion variables.
+		foreach( $excludes as &$absoluteExclude ) {
+			$absoluteExclude = str_replace( '{media}', self::get_media_root(), $absoluteExclude );
+			$absoluteExclude = str_replace( '{themes}', self::get_themes_root(), $absoluteExclude );
+			$absoluteExclude = str_replace( '{plugins}', self::get_plugins_root(), $absoluteExclude );
 		}
 		
 		// Clean up & sanitize array.
 		if ( $trim_suffix ) {
-			array_walk( $exclusions, create_function( '&$val', '$val = rtrim( trim( $val ), \'/\' );' ) ); // Apply trim to all items within.
+			array_walk( $excludes, create_function( '&$val', '$val = rtrim( trim( $val ), \'/\' );' ) ); // Apply trim to all items within.
 		} else {
-			array_walk( $exclusions, create_function( '&$val', '$val = trim( $val );' ) ); // Apply (whitespace-only) trim to all items within.		
+			array_walk( $excludes, create_function( '&$val', '$val = trim( $val );' ) ); // Apply (whitespace-only) trim to all items within.
 		}
-		$exclusions = array_filter( $exclusions, 'strlen' ); // Remove any empty / blank lines.
 		
-		$exclusions = apply_filters( 'backupbuddy_zip_exclusions', $exclusions );
-		pb_backupbuddy::status( 'details', 'Initial directory exclusions (after filter): `' . implode( '; ', $exclusions ) . '`.' );
+		// Apply filter for 3rd party modifications.
+		$excludes = apply_filters( 'backupbuddy_zip_exclusions', $excludes );
 		
-		return $exclusions;
+		// Remove duplicates.
+		$excludes = array_unique( $excludes );
+		
+		/*
+		echo 'pre-$excludes:<pre>';
+		print_r( $excludes );
+		echo '</pre>';
+		*/
+		
+		// Remove all exclusions that do not begin at the backup root (custom or default).
+		foreach( $excludes as &$absoluteExclude ) {
+			//echo '<br>root: ' . $backupRoot . ' ~ ' . $absoluteExclude;
+			if ( 0 !== strpos( $absoluteExclude, $backupRoot ) ) {
+				$absoluteExclude = '';
+			}
+		}
+		
+		// Remove any empty / blank lines.
+		$excludes = array_filter( $excludes, 'strlen' );
+		
+		// Fix array indexes for removed items.
+		$excludes = array_values( $excludes );
+		
+		
+		
+		// Make all exclusions relative to backup root.
+		foreach( $excludes as &$exclude ) {
+			$exclude = '/' . str_replace( $backupRoot, '', $exclude );
+		}
+		
+		/*
+		echo '$excludes:<pre>';
+		print_r( $excludes );
+		echo '</pre>';
+		*/
+		
+		return $excludes;
 		
 	} // End get_directory_exclusions().
 
@@ -954,7 +1049,7 @@ class backupbuddy_core {
 						if ( isset( $backup_options->options['profile'] ) ) {
 							$detected_type = '
 							<div>
-								<span style="color: #AAA; float: left;">' . $detected_type . '</span>
+								<span class="profile_type-' . $backup_integrity['detected_type'] . '" style="float: left;" title="' . backupbuddy_core::pretty_backup_type( $detected_type ) . '"></span>
 								<span style="display: inline-block; float: left; height: 15px; border-right: 1px solid #EBEBEB; margin-left: 6px; margin-right: 6px;"></span>
 								' . htmlentities( $backup_options->options['profile']['title'] ) . '
 							</div>
@@ -985,9 +1080,24 @@ class backupbuddy_core {
 					if ( isset( $backup_integrity['comment'] ) && ( $backup_integrity['comment'] !== false ) && ( $backup_integrity['comment'] !== '' ) ) {
 						$main_string .= '<br><span class="description">Note: <span class="pb_backupbuddy_notetext">' . htmlentities( $backup_integrity['comment'] ) . '</span></span>';
 					}
-
-
-					$integrity = pb_backupbuddy::$format->prettify( $status, $pretty_status ) . ' ';
+					
+					// No integrity check for themes or plugins types.
+					$raw_type = backupbuddy_core::getBackupTypeFromFile( $file );
+					if ( ( 'themes' == $raw_type ) || ( 'plugins' == $raw_type ) || ( 'media' == $raw_type ) || ( 'files' == $raw_type ) ) {
+						unset( $fileCount );
+						foreach( (array)$backup_integrity['tests'] as $test ) {
+							if ( isset( $test['fileCount'] ) ) {
+								$fileCount = $test['fileCount'];
+							}
+						}
+						$integrity = pb_backupbuddy::$format->prettify( $status, $pretty_status ) . ' ';
+						if ( isset( $fileCount ) ) {
+							$integrity .= '<span class="pb_label pb_label-warning" style="display: none;">' . $fileCount . ' ' . __( 'files', 'it-l10n-backupbuddy' ) . '</span> '; // TODO: Hidden until future version.
+						}
+					} else {
+						$integrity = pb_backupbuddy::$format->prettify( $status, $pretty_status ) . ' ';
+					}
+					
 					if ( isset( $backup_integrity['scan_notes'] ) && count( (array)$backup_integrity['scan_notes'] ) > 0 ) {
 						foreach( (array)$backup_integrity['scan_notes'] as $scan_note ) {
 							$integrity .= $scan_note . ' ';
@@ -1003,11 +1113,9 @@ class backupbuddy_core {
 					
 				} // end if is_array( $backup_options ).
 				
-				// No integrity check for themes or plugins types.
-				$raw_type = backupbuddy_core::getBackupTypeFromFile( $file );
-				if ( ( 'themes' == $raw_type ) || ( 'plugins' == $raw_type ) ) {
-					$integrity = 'n/a';
-				}
+				
+				
+				$integrity .= '<div class="row-actions"><a href="javascript:void(0);" class="pb_backupbuddy_hoveraction_hash" rel="' . basename( $file ) . '">View Checksum</a></div>';
 				
 				$backups[basename( $file )] = array(
 					array( basename( $file ), $main_string . '<br><span class="description" style="color: #AAA; display: inline-block; margin-top: 5px;">' . basename( $file ) . '</span>' ),
@@ -1113,9 +1221,9 @@ class backupbuddy_core {
 			}
 			
 			if ( $importbuddy_pass_hash == '' ) {
-				$message = 'Warning #9032 - You have not set an ImportBuddy password on the BackupBuddy Settings page. Once this password is set a copy of the importbuddy.php file needed to restore your backup will be included in Full backup zip files for convenience. It may manually be downloaded from the Restore / Migrate page.';
+				$message = 'Warning #9032 - You have not set an ImportBuddy password on the BackupBuddy Settings page. A copy of the importbuddy.php file needed to restore your backup is included in Full backup zip files for convenience. Since a password is not a random one has been applied to this importbuddy.php so you will need to use the "Forgot Password" option if using it to restore.';
 				pb_backupbuddy::status( 'warning', $message );
-				return false;
+				$importbuddy_pass_hash = pb_backupbuddy::random_string( 45 ); // Random long hash for dummy password.
 			}
 		}
 		
@@ -1148,20 +1256,18 @@ class backupbuddy_core {
 			'classes/import.php'								=>		'importbuddy/classes/import.php',
 			'classes/restore.php'								=>		'importbuddy/classes/restore.php',
 			'classes/_restoreFiles.php'							=>		'importbuddy/classes/_restoreFiles.php',
-			'classes/remote_api.php'							=>		'importbuddy/classes/remote_api.php',
+			'classes/remote_api.php'								=>		'importbuddy/classes/remote_api.php',
 			
-			'js/jquery.leanModal.min.js'						=>		'importbuddy/js/jquery.leanModal.min.js',
-			'js/jquery.joyride-2.0.3.js'						=>		'importbuddy/js/jquery.joyride-2.0.3.js',
-			'js/modernizr.mq.js'								=>		'importbuddy/js/modernizr.mq.js',
-			'css/joyride.css'									=>		'importbuddy/css/joyride.css',
+			'js/jquery.leanModal.min.js'							=>		'importbuddy/js/jquery.leanModal.min.js',
+			'css/animate.css'									=>		'importbuddy/css/animate.css',
 
 			'images/working.gif'								=>		'importbuddy/images/working.gif',
 			'images/bullet_go.png'								=>		'importbuddy/images/bullet_go.png',
 			'images/favicon.png'								=>		'importbuddy/images/favicon.png',
 			'images/sort_down.png'								=>		'importbuddy/images/sort_down.png',
-			'images/icon_menu_32x32.png'						=>		'importbuddy/images/icon_menu_32x32.png',
+			'images/icon_menu_32x32.png'							=>		'importbuddy/images/icon_menu_32x32.png',
 
-			'lib/dbreplace'										=>		'importbuddy/lib/dbreplace',
+			'lib/dbreplace'									=>		'importbuddy/lib/dbreplace',
 			'lib/dbimport'										=>		'importbuddy/lib/dbimport',
 			'lib/commandbuddy'									=>		'importbuddy/lib/commandbuddy',
 			'lib/zipbuddy'										=>		'importbuddy/lib/zipbuddy',
@@ -1172,14 +1278,14 @@ class backupbuddy_core {
 			'pluginbuddy'										=>		'importbuddy/pluginbuddy',
 
 			'controllers/pages/server_info'						=>		'importbuddy/controllers/pages/server_info',
-			'controllers/pages/server_tools.php'				=>		'importbuddy/controllers/pages/server_tools.php',
+			'controllers/pages/server_tools.php'					=>		'importbuddy/controllers/pages/server_tools.php',
 
 			// Stash
 			//'destinations/stash2/init.php'						=>		'importbuddy/lib/stash2/init.php',
-			'destinations/stash2/class.itx_helper2.php'			=>		'importbuddy/lib/stash2/class.itx_helper2.php',
-			'destinations/stash2/class.itcred.php'				=>		'importbuddy/lib/stash2/class.itcred.php',
-			'destinations/stash2/class-phpass.php'				=>		'importbuddy/lib/stash2/class-phpass.php',
-			'destinations/_s3lib/aws-sdk/lib/requestcore'		=>		'importbuddy/lib/requestcore',
+			'destinations/stash2/class.itx_helper2.php'				=>		'importbuddy/lib/stash2/class.itx_helper2.php',
+			'destinations/stash2/class.itcred.php'					=>		'importbuddy/lib/stash2/class.itcred.php',
+			'destinations/stash2/class-phpass.php'					=>		'importbuddy/lib/stash2/class-phpass.php',
+			'destinations/_s3lib/aws-sdk/lib/requestcore'			=>		'importbuddy/lib/requestcore',
 		);
 
 		pb_backupbuddy::status( 'details', 'Loading each file into memory for writing master importbuddy file.' );
@@ -1236,6 +1342,28 @@ class backupbuddy_core {
 	
 	
 	
+	// Leading & trailing slash. Does not create if it does not exist.
+	public static function get_media_root() {
+		$uploads_dirs = wp_upload_dir( null, false );
+		return rtrim( $uploads_dirs['basedir'], '/' ) . '/';
+	} // End get_media_root().
+	
+	
+	
+	// Leading & trailing slash.
+	public static function get_themes_root() {
+		return rtrim( dirname( get_template_directory() ), '/' ) . '/';
+	} // End get_themes_root().
+	
+	
+	
+	// Leading & trailing slash.
+	public static function get_plugins_root() {
+		return rtrim( WP_PLUGIN_DIR, '/' ) . '/';
+	} // End get_plugins_root().
+	
+	
+	
 	/* pretty_backup_type()
 	 *
 	 * Return a nice human string for a specified backup type.
@@ -1249,7 +1377,8 @@ class backupbuddy_core {
 			'db' => 'Database',
 			'files' => 'Files',
 			'themes' => 'Themes',
-			'plugins' => 'Plugins'
+			'plugins' => 'Plugins',
+			'media' => 'Media',
 		);
 		
 		if ( isset( $types[ $type ] ) ) {
@@ -1461,7 +1590,7 @@ class backupbuddy_core {
 			}
 		}
 		if ( count( $found_plugins ) > 0 ) {
-			$message = __( 'One or more caching plugins were detected as activated. Some caching plugin configurations may possibly cache & interfere with backup processes or WordPress cron. If you encounter problems clear the caching plugin\'s cache (deactivating the plugin may help) to troubleshoot.', 'it-l10n-backupbuddy' ) . ' ';
+			$message = __( 'One or more caching or security plugins known to possibly cause problems was detected as activated. Some caching or security plugin configurations may possibly cache or interfere with backup processes or WordPress cron. If you encounter problems clear the caching plugin\'s cache or check security settings (deactivating the plugin may help) to troubleshoot.', 'it-l10n-backupbuddy' ) . ' ';
 			$message .= __( 'Activated caching plugins detected:', 'it-l10n-backupbuddy' ) . ' ';
 			$message .= implode( ', ', $found_plugins );
 			$message .= '.';
@@ -2565,11 +2694,6 @@ class backupbuddy_core {
 			return '';
 		}
 		
-		// If not a backup file then return blank.
-		if ( ! backupbuddy_core::startsWith( basename( $file ), 'backup-' ) ) {
-			return '';
-		}
-		
 		if ( false === $quiet ) {
 			pb_backupbuddy::status( 'details', 'Detecting backup type if possible.' );
 		}
@@ -3014,6 +3138,8 @@ class backupbuddy_core {
 			// Backup Info.
 			'backupbuddy_version'		=> pb_backupbuddy::settings( 'version' ),
 			'wordpress_version'			=> $wp_version,													// WordPress version.
+			'php_version'				=> PHP_VERSION,
+			
 			'backup_time'				=> $settings['start_time'],								// Time backup began.
 			'backup_type'				=> $settings['backup_type'],										// Backup type: full, db, files
 			'profile'					=> $settings['profile'],									// Array of profile settings.
@@ -3117,6 +3243,7 @@ class backupbuddy_core {
 	 *
 	 */
 	public static function truncate_file_beginning($filename,$maxfilesize,$keepPercent = 50 ){
+		@clearstatcache( true, $filename );
 		$size=filesize($filename);
 		if ($size<$maxfilesize) return;
 		
@@ -3379,9 +3506,11 @@ class backupbuddy_core {
 				break;
 			}
 			
-			$buffer .= str_repeat( '-', 1048576 * $incrementMB );
-			$usage = round( memory_get_usage() / 1048576, 2 );
-			//error_log( 'usage:' + usage );
+			//$buffer .= str_repeat( '-', 1048576 * $incrementMB );
+			${ 'mem_str_' . $loopCount} = str_pad( '', 1048576 * $incrementMB );
+			
+			//$usage = round( memory_get_usage() / 1048576, 2 );
+			$usage = round( memory_get_usage( true ) / 1048576, 2 );
 			
 			@ftruncate( $fso, 0 ); // Erase existing file contents.
 			if ( false === @fwrite( $fso, $usage ) ) { // Update time elapsed into file.

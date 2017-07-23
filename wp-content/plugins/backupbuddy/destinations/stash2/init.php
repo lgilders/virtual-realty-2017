@@ -30,7 +30,10 @@ class pb_backupbuddy_destination_stash2 { // Change class name end to match dest
 		
 		'db_archive_limit'			=>		'0',		// Maximum number of db backups for this site in this directory for this account. No limit if zero 0.
 		'full_archive_limit' 		=>		'0',		// Maximum number of full backups for this site in this directory for this account. No limit if zero 0.
-		//'files_archive_limit' 		=>		'0',		// Maximum number of files only backups for this site in this directory for this account. No limit if zero 0.
+		'themes_archive_limit' 		=>		'0',
+		'plugins_archive_limit' 		=>		'0',
+		'media_archive_limit' 		=>		'0',
+		'files_archive_limit' 		=>		'0',
 		
 		'manage_all_files'			=>		'0',		// Allow user to manage all files in Stash? If enabled then user can view all files after entering their password. If disabled the link to view all is hidden.
 		'disable_file_management'	=>		'0',		// When 1, _manage.php will not load which renders remote file management DISABLED.
@@ -212,7 +215,7 @@ class pb_backupbuddy_destination_stash2 { // Change class name end to match dest
 			if ( null !== ( $response_decoded = json_decode( $response['body'], true  ) ) ) {
 				if ( ( false === $passthru_errors ) && ( isset( $response_decoded['error'] ) ) ) {
 					if ( isset( $response_decoded['error']['message'] ) ) {
-						$error = 'Error #39752893. Server reported an error performing action `' . $action . '` with additional params: `' . print_r( $additionalParams, true ) . '`. Body Details: `' . print_r( $response_decoded['error'], true ) . '`. Response Details: `' . print_r( $response['response'], true ) . '`.';
+						$error = 'Error #39752893b. Server reported an error performing action `' . $action . '` with additional params: `' . print_r( $additionalParams, true ) . '`. Body Details: `' . print_r( $response_decoded['error'], true ) . '`. Response Details: `' . print_r( $response['response'], true ) . '`.';
 						self::_error( $error );
 						return $response_decoded['error']['message'];
 					} else {
@@ -524,6 +527,10 @@ class pb_backupbuddy_destination_stash2 { // Change class name end to match dest
 			'types' => array(
 						'db' => $settings['db_archive_limit'],
 						'full' => $settings['full_archive_limit'],
+						'themes' => $settings['themes_archive_limit'],
+						'plugins' => $settings['plugins_archive_limit'],
+						'media' => $settings['media_archive_limit'],
+						'files' => $settings['files_archive_limit'],
 						),
 			'delete' => true,
 		);

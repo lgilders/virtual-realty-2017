@@ -186,13 +186,13 @@ if ( !defined( 'PB_IMPORTBUDDY' ) ) {
 	global $wpdb;
 	$parent_class_test = array(
 					'title'			=>		'MySQL Version',
-					'suggestion'	=>		'>= 5.5.0 (WordPress recommends 5.6+)',
+					'suggestion'	=>		'>= 5.6.0 (WordPress recommends 5.6+)',
 					'value'			=>		$wpdb->db_version(),
 					'tip'			=>		__('Version of your database server (mysql) as reported to this script by WordPress.', 'it-l10n-backupbuddy' ),
 				);
 	if ( version_compare( $wpdb->db_version(), '5.0.15', '<=' ) ) {
 		$parent_class_test['status'] = 'FAIL';
-	} elseif ( version_compare( $wpdb->db_version(), '5.5.0', '<=' ) ) {
+	} elseif ( version_compare( $wpdb->db_version(), '5.6.0', '<=' ) ) {
 		$parent_class_test['status'] = 'WARNING';
 	} else {
 		$parent_class_test['status'] = 'OK';
@@ -249,11 +249,13 @@ if ( !defined( 'pluginbuddy_importbuddy' ) ) {
 }
 $parent_class_test = array(
 				'title'			=>		'PHP Version',
-				'suggestion'	=>		'>= ' . $php_minimum . ' (WordPress recommends 5.6+)',
+				'suggestion'	=>		'>= ' . $php_minimum . ' (WordPress recommends 7.0+)',
 				'value'			=>		phpversion(),
 				'tip'			=>		__('Version of PHP currently running on this site.', 'it-l10n-backupbuddy' ),
 			);
 if ( version_compare( PHP_VERSION, $php_minimum, '<=' ) ) {
+	$parent_class_test['status'] = 'FAIL';
+} elseif ( version_compare( PHP_VERSION, '5.6', '<=' ) ) {
 	$parent_class_test['status'] = 'WARNING';
 } else {
 	$parent_class_test['status'] = 'OK';

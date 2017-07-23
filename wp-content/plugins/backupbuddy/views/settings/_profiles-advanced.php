@@ -22,17 +22,19 @@ $settings_form->add_setting( array(
 ) );
 
 if ( $profile_array['type'] != 'defaults' ) {
-	$settings_form->add_setting( array(
-		'type'		=>		'radio',
-		'name'		=>		'profiles#' . $profile_id . '#skip_database_dump',
-		'options'	=>		array( '-1' => 'Use global default', '1' => 'Skip', '0' => 'Do not skip' ),
-		'title'		=>		__('Skip database dump on backup', 'it-l10n-backupbuddy' ),
-		'tip'		=>		__('[Default: disabled] - (WARNING: This prevents BackupBuddy from backing up the database during any kind of backup. This is for troubleshooting / advanced usage only to work around being unable to backup the database.', 'it-l10n-backupbuddy' ),
-		'css'		=>		'',
-		//'after'		=>		'<br><span class="description"> ' . __('Use with caution.', 'it-l10n-backupbuddy' ) . '</span>',
-		'rules'		=>		'required',
-		'orientation' =>	'vertical',
-	) );
+	if ( ( 'files' != pb_backupbuddy::$options['profiles'][$profile]['type'] ) && ( 'themes' != pb_backupbuddy::$options['profiles'][$profile]['type'] ) && ( 'plugins' != pb_backupbuddy::$options['profiles'][$profile]['type'] ) && ( 'media' != pb_backupbuddy::$options['profiles'][$profile]['type'] ) ) {
+		$settings_form->add_setting( array(
+			'type'		=>		'radio',
+			'name'		=>		'profiles#' . $profile_id . '#skip_database_dump',
+			'options'	=>		array( '-1' => 'Use global default', '1' => 'Skip', '0' => 'Do not skip' ),
+			'title'		=>		__('Skip database dump on backup', 'it-l10n-backupbuddy' ),
+			'tip'		=>		__('[Default: disabled] - (WARNING: This prevents BackupBuddy from backing up the database during any kind of backup. This is for troubleshooting / advanced usage only to work around being unable to backup the database.', 'it-l10n-backupbuddy' ),
+			'css'		=>		'',
+			//'after'		=>		'<br><span class="description"> ' . __('Use with caution.', 'it-l10n-backupbuddy' ) . '</span>',
+			'rules'		=>		'required',
+			'orientation' =>	'vertical',
+		) );
+	}
 
 
 /*
@@ -59,4 +61,18 @@ if ( $profile_array['type'] != 'defaults' ) {
 		'rules'		=>		'required',
 		'orientation' =>	'vertical',
 	) );
+	
+	$settings_form->add_setting( array(
+		'type'		=>		'select',
+		'name'		=>		'profiles#' . $profile_id . '#backup_mode',
+		'title'		=>		__('Backup mode', 'it-l10n-backupbuddy' ),
+		'options'	=>		array(
+									'-1'		=>		__( 'Use global default', 'it-l10n-backupbuddy' ),
+									'1'		=>		__( 'Classic (v1.x) - Entire backup in single PHP page load', 'it-l10n-backupbuddy' ),
+									'2'		=>		__( 'Modern (v2.x+) - Split across page loads via WP cron', 'it-l10n-backupbuddy' ),
+								),
+		'tip'		=>		__('[Default: Modern] - If you are encountering difficulty backing up due to WordPress cron, HTTP Loopbacks, or other features specific to version 2.x you can try classic mode which runs like BackupBuddy v1.x did.', 'it-l10n-backupbuddy' ),
+		'rules'		=>		'required',
+	) );
 }
+

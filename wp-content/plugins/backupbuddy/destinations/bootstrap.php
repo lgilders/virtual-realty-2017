@@ -34,7 +34,7 @@ class pb_backupbuddy_destinations {
 	private static function _init_destination( $destination_settings ) {
 		pb_backupbuddy::status( 'details', 'Initializing destination.' );
 		if ( ( ! isset( $destination_settings['type'] ) ) || ( '' == $destination_settings['type'] ) ) {
-			$error = 'Error #8548833: Missing destination settings parameters.';
+			$error = 'Error #8548833: Missing destination settings parameters. Details: `' . print_r( $destination_settings, true ) . '`.';
 			echo $error;
 			pb_backupbuddy::status( 'error', $error );
 			return false;
@@ -755,21 +755,14 @@ class pb_backupbuddy_destinations {
 			
 			// Hotfix to fix s32 destination breaking due to namespaces in init.php.  Need to re-work so init.php doesn't break things.
 			if ( true !== $phpmin ) {
-				continue;
-			}
-			
-			$destination = self::get_info( $destination_dir );
-			$destination['compatible'] = true;
-			$destination['type'] = $destination_dir;
-			
-			if ( true !== $phpmin ) { // Compatibility failed. Skip this destination.
-				if ( TRUE !== $showUnavailable ) {
-					continue;
-				} else {
-					$destination['compatible'] = false;
-					$destination['name'] = $destination_dir;
-					$destination['compatibility'] = __( 'Requires PHP v', 'it-l10n-backupbuddy' ) . $phpmin;
-				}
+				$destination['compatible'] = false;
+				$destination['name'] = $destination_dir;
+				$destination['compatibility'] = __( 'Requires PHP v', 'it-l10n-backupbuddy' ) . $phpmin;
+			} else {
+				
+				$destination = self::get_info( $destination_dir );
+				$destination['compatible'] = true;
+				$destination['type'] = $destination_dir;
 			}
 			
 			$destination_list[$destination_dir] = $destination;

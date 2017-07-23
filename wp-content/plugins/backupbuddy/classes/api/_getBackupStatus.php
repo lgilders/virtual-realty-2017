@@ -172,7 +172,9 @@ if ( ( $serial == '' ) || ( ! is_array( $backup ) ) ) {
 						$sqlFilename = 'db_1.sql';
 					} */
 					$sql_file = $backup['temp_directory'] . $sqlFilename;
+
 					if ( file_exists( $sql_file ) ) {
+						@clearstatcache( true, $sql_file );
 						$sql_filesize = filesize( $sql_file );
 					} else { // No SQL file yet.
 						$sql_filesize = 0;
@@ -223,7 +225,7 @@ if ( ( $serial == '' ) || ( ! is_array( $backup ) ) ) {
 					$writeSpeedText = '';
 					if ( $zipRunTime > 0 ) {
 						$writeSpeed = $stats['size'] / $zipRunTime;
-						$writeSpeedText = '. ' . __('Approximate creation speed', 'it-l10n-backupbuddy' ) . ': ' . pb_backupbuddy::$format->file_size( $writeSpeed ) . '/sec';
+						$writeSpeedText = '. ' . __('Approximate speed', 'it-l10n-backupbuddy' ) . ': ' . pb_backupbuddy::$format->file_size( $writeSpeed ) . '/sec. ' . __( 'Elapsed', 'it-l10n-backupbuddy' ) . ': ' . round( $zipRunTime, 2 ) . ' secs.';
 					}
 					pb_backupbuddy::status( 'details', __('Temporary ZIP file size', 'it-l10n-backupbuddy' ) .': ' . pb_backupbuddy::$format->file_size( $stats['size'] ) . $writeSpeedText, $serial );
 					pb_backupbuddy::status( 'archiveSize', pb_backupbuddy::$format->file_size( $stats['size'] ), $serial );

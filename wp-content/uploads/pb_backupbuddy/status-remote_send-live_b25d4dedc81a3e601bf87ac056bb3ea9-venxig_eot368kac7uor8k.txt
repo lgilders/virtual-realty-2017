@@ -1,0 +1,8 @@
+{"event":"details","time":1500763850,"u":"84","run":"16.99","mem":"13.92","data":"----- Initiating master send function for BackupBuddy v7.3.1.2 for basename file: `xit-2x.gif`. Post-send deletion: "}
+{"event":"details","time":1500763850,"u":"84","run":"16.99","mem":"13.93","data":"Created fileoptions lock file `send-live_b25d4dedc81a3e601bf87ac056bb3ea9-venxig.txt.lock` with ID: 59740f0acdf006.60227461."}
+{"event":"details","time":1500763850,"u":"84","run":"16.99","mem":"13.92","data":"Fileoptions load using 0 MB of memory."}
+{"event":"details","time":1500763850,"u":"84","run":"16.99","mem":"13.93","data":"Fileoptions `send-live_b25d4dedc81a3e601bf87ac056bb3ea9-venxig.txt` saved. 3160 bytes written."}
+{"event":"details","time":1500763850,"u":"84","run":"16.99","mem":"13.93","data":"Initializing destination."}
+{"event":"details","time":1500763850,"u":"84","run":"16.99","mem":"13.93","data":"Loading destination init file `\/Users\/lgilders\/Sites\/virtual-realty-2017\/wp-content\/plugins\/backupbuddy\/destinations\/live\/init.php`."}
+{"event":"error","time":1500763850,"u":"85","run":"16.99","mem":"13.93","data":"Destination type `live` init.php file not found. Unable to load class `pb_backupbuddy_destination_live`."}
+{"event":"error","time":1500763850,"u":"85","run":"17.00","mem":"13.93","data":"{Error #546893498a. Destination configuration file missing. Destination may have been deleted.}"}

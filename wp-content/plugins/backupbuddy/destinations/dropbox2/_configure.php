@@ -142,11 +142,16 @@ if ( true === $show_config_form ) {
 		'rules'		=>		'required|string[1-45]',
 		'default'	=>		$default_name,
 	) );
+	if ( $mode !== 'edit' ) {
+		$dropbox_directory_type = 'text';
+	} else {
+		$dropbox_directory_type = 'plaintext';
+	}
 	$settings_form->add_setting( array(
-		'type'		=>		'text',
+		'type'		=>		$dropbox_directory_type,
 		'name'		=>		'directory',
 		'title'		=>		__( 'Directory (optional)', 'it-l10n-backupbuddy' ),
-		'tip'		=>		__( '[Example: backupbuddy or backupbuddy/mysite/ or myfiles/backups/mysite] - Directory (or subdirectory) name to place the backups within.', 'it-l10n-backupbuddy' ),
+		'tip'		=>		__( '[Example: backupbuddy or backupbuddy/mysite/ or myfiles/backups/mysite] - Directory (or subdirectory) name to place the backups within. NOTE: This cannot be changed once the destination is created (for security).', 'it-l10n-backupbuddy' ),
 		'rules'		=>		'string[0-250]',
 	) );
 	$settings_form->add_setting( array(

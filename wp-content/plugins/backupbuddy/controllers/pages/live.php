@@ -23,6 +23,12 @@ if ( defined( 'GD_SYSTEM_PLUGIN_DIR' ) || class_exists( '\\WPaaS\\Plugin' ) ) {
 }
 
 
+if ( is_network_admin() ) {
+	$admin_url = network_admin_url( 'admin.php' );
+} else {
+	$admin_url = admin_url( 'admin.php' );
+}
+
 // No PHP runtime calculated yet. Try to see if test is finished.
 if ( 0 == pb_backupbuddy::$options['tested_php_runtime'] ) {
 	backupbuddy_core::php_runtime_test_results();
@@ -134,9 +140,29 @@ if ( false === $liveDestinationID ) {
 // Load normal manage page.
 
 
+pb_backupbuddy::$ui->title( __( 'Stash Live', 'it-l10n-backupbuddy' ) );
+?>
+<br>
 
-pb_backupbuddy::$ui->title( __( 'BackupBuddy Stash Live', 'it-l10n-backupbuddy' ) . '&nbsp;&nbsp;<a href="' . pb_backupbuddy::ajax_url( 'live_settings' ) . '&#038;TB_iframe=1&#038;width=640&#038;height=600" class="add-new-h2 thickbox">' . __( 'Settings', 'it-l10n-backupbuddy' ) . '</a>' );
+<script>
+	jQuery(document).ready(function() {
+		
+		jQuery('#screen-meta-links').append(
+			'<div id="backupbuddy-meta-link-wrap" class="hide-if-no-js screen-meta-toggle">' +
+				'<a href="<?php echo pb_backupbuddy::nonce_url( $admin_url . '?page=pb_backupbuddy_live&live_action=troubleshooting' ); ?>" class="add-new-h2 show-settings no-dropdown"><?php _e( "Troubleshooting Scan", "it-l10n-backupbuddy" ); ?></a>' +
+			'</div>'
+		);
+		
+		jQuery('#screen-meta-links').append(
+			'<div id="backupbuddy-meta-link-wrap" class="hide-if-no-js screen-meta-toggle">' +
+				'<a href="<?php echo pb_backupbuddy::ajax_url( 'live_settings' ); ?>&#038;TB_iframe=1&#038;width=640&#038;height=600" class="add-new-h2 thickbox show-settings no-dropdown"><?php _e( "Live Settings", "it-l10n-backupbuddy" ); ?></a>' +
+			'</div>'
+		);
+		
+	});
+	</script>
 
+<?php
 $destination = pb_backupbuddy::$options['remote_destinations'][ $liveDestinationID ];
 $destination_id = $liveDestinationID;
 require_once( pb_backupbuddy::plugin_path() . '/destinations/live/_manage.php' ); // Expects incoming vars: $destination, $destination_id.

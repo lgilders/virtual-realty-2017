@@ -134,7 +134,7 @@ if ( ( ( pb_backupbuddy::$options['profiles'][0]['integrity_check'] == '0' ) ) &
 	unset( $file_stats );
 
 	$integrity = array(
-		'status'				=>		'Unknown',
+		'status'				=>		'Unknown (check disabled)',
 		'tests'					=>		array(),
 		'scan_time'				=>		0,
 		'detected_type'			=>		'unknown',
@@ -178,30 +178,46 @@ $tests = array();
 pb_backupbuddy::status( 'details', 'NOTE: It is normal to see several "File not found" messages in the next several log lines.' );
 
 
-// Check for DAT file.
-$pass = false;
-pb_backupbuddy::status( 'details', 'Verifying DAT file in zip archive.' );
-if ( pb_backupbuddy::$classes['zipbuddy']->file_exists( $file, 'wp-content/uploads/backupbuddy_temp/' . $serial . '/backupbuddy_dat.php' ) === true ) { // Post 2.0 full backup
-	$backup_type = 'full';
-	$pass = true;
+if ( ! isset( $options['type'] ) || ( isset( $options['type'] ) && ( ( 'db' == $options['type'] || 'full' == $options['type'] ) ) ) ) {
+	// Check for DAT file.
+	$pass = false;
+	pb_backupbuddy::status( 'details', 'Verifying DAT file in zip archive.' );
+	if ( pb_backupbuddy::$classes['zipbuddy']->file_exists( $file, 'wp-content/uploads/backupbuddy_temp/' . $serial . '/backupbuddy_dat.php' ) === true ) { // Post 2.0 full backup
+		$backup_type = 'full';
+		$pass = true;
+	}
+	if ( pb_backupbuddy::$classes['zipbuddy']->file_exists( $file, 'wp-content/uploads/temp_' . $serial . '/backupbuddy_dat.php' ) === true ) { // Pre 2.0 full backup
+		$backup_type = 'full';
+		$pass = true;
+	}
+	if ( pb_backupbuddy::$classes['zipbuddy']->file_exists( $file, 'backupbuddy_dat.php' ) === true ) { // DB backup
+		$backup_type = 'db';
+		$pass = true;
+	}
+	$tests[] = array(
+		'test'		=>	'BackupBuddy data file',
+		'pass'		=>	$pass,
+	);
 }
-if ( pb_backupbuddy::$classes['zipbuddy']->file_exists( $file, 'wp-content/uploads/temp_' . $serial . '/backupbuddy_dat.php' ) === true ) { // Pre 2.0 full backup
-	$backup_type = 'full';
-	$pass = true;
+
+if ( ( 'files' == $options['type'] ) || ( 'media' == $options['type'] ) || ( 'themes' == $options['type'] ) || ( 'plugins' == $options['type'] ) ) {
+	$files = pb_backupbuddy::$classes['zipbuddy']->get_file_list( $file );
+	$count = count( $files );
+	if ( is_array( $files ) && ( $count > 0 ) ) {
+		$pass = true;
+	} else {
+		$pass = false;
+	}
+	$tests[] = array(
+		'test'		=>	'Basic file list scan (' . $count . ' files found inside) - <a target="_top" href="' . admin_url('admin.php') . '?page=pb_backupbuddy_backup&zip_viewer=' . basename( $file ). '&value=' . basename( $file ) . '&bub_rand=' . rand( 100, 999 ) . '">Browse Files</a>', // rand is because some hosts block URLs with a .zip at the end of the url.
+		'pass'		=>	$pass,
+		'fileCount'	=>	$count,
+	);
 }
-if ( pb_backupbuddy::$classes['zipbuddy']->file_exists( $file, 'backupbuddy_dat.php' ) === true ) { // DB backup
-	$backup_type = 'db';
-	$pass = true;
-}
-$tests[] = array(
-	'test'		=>	'BackupBuddy data file',
-	'pass'		=>	$pass,
-);
 
 
-
-if ( isset( $options['type'] ) && ( 'files' == $options['type'] ) ) {
-	pb_backupbuddy::status( 'details', 'Files only backup type so skipping scan of database files in backup as it is not applicable.' );
+if ( isset( $options['type'] ) && ( ( 'files' == $options['type'] ) || ( 'themes' == $options['type'] ) || ( 'plugins' == $options['type'] ) || ( 'media' == $options['type'] ) ) ) {
+	pb_backupbuddy::status( 'details', 'Files, themes, plugins or media backup type so skipping scan of database files in backup as it is not applicable.' );
 } else { // Non-files only backup so check for DB.
 	// Check for DB .sql file.
 	$pass = false;
@@ -253,6 +269,11 @@ if ( isset( $options['type'] ) && ( 'files' == $options['type'] ) ) {
 					}
 				}
 			}
+		} elseif ( ( 'files' == $backup_type ) || ( 'themes' == $backup_type ) || ( 'plugins' == $backup_type ) || ( 'media' == $backup_type ) ) {
+
+			// test nothing here.
+			$pass = true;
+
 		} else { // Full / MS / Export.
 			pb_backupbuddy::status( 'details', 'Not database-only type backup.' );
 			if ( pb_backupbuddy::$classes['zipbuddy']->file_exists( $file, 'wp-content/uploads/backupbuddy_temp/' . $serial . '/db_1.sql' ) === true ) { // Commandline based.
@@ -352,6 +373,12 @@ if ( false !== stristr( $file, '-db-' ) ) {
 	$backup_type = 'full';
 } elseif ( false !== stristr( $file, '-files-' ) ) {
 	$backup_type ='files';
+} elseif ( false !== stristr( $file, '-themes-' ) ) {
+	$backup_type ='themes';
+} elseif ( false !== stristr( $file, '-plugins-' ) ) {
+	$backup_type ='plugins';
+} elseif ( false !== stristr( $file, '-media-' ) ) {
+	$backup_type ='media';
 } elseif ( false !== stristr( $file, '-export-' ) ) {
 	$backup_type ='export';
 } else {

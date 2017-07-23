@@ -1757,10 +1757,16 @@ if ( !class_exists( "pluginbuddy_zbzipcore" ) ) {
 		 *	
 		 *	@param		string		$file			File to write exclusions into.
 		 *	@param		array		$exclusions		Array of directories/paths to exclude. One per line.
+		 *	@param		atring		$root			Root directory to exclude relative to.
 		 *	@return		null
 		 */
-		protected function _render_exclusions_file( $file, $exclusions ) {
-		
+		protected function _render_exclusions_file( $file, $exclusions, $root = '' ) {
+			if ( '' == $root ) {
+				$root = ABSPATH;
+			} else {
+				$root = rtrim( $root, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR;
+			}
+
 			// Array for cleaned up exclusions list
 			$sanitized_exclusions = array();
 			
@@ -1774,7 +1780,7 @@ if ( !class_exists( "pluginbuddy_zbzipcore" ) ) {
 				$exclusion = preg_replace( '|[' . addslashes( self::DIRECTORY_SEPARATORS ) . ']+|', DIRECTORY_SEPARATOR, $exclusion );
 				
 				// DIRECTORY.
-				if ( is_dir( ABSPATH . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
+				if ( is_dir( $root . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
 					
 					$this->log( 'details', 'Excluding directory `' . $exclusion . '`.' );
 					
@@ -1782,12 +1788,12 @@ if ( !class_exists( "pluginbuddy_zbzipcore" ) ) {
 					$exclusion = rtrim( $exclusion, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . '*';
 				
 				// FILE.
-				} elseif ( is_file( ABSPATH . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
+				} elseif ( is_file( $root . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
 					
 					$this->log( 'details', 'Excluding file `' . $exclusion . '`.' );
 				
 				// SYMBOLIC LINK.
-				} elseif ( is_link( ABSPATH . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
+				} elseif ( is_link( $root . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
 					
 					$this->log( 'details', 'Excluding symbolic link `' . $exclusion . '`.' );
 				

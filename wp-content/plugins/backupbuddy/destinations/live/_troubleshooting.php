@@ -149,9 +149,12 @@ class backupbuddy_live_troubleshooting {
 				}
 				$response = print_r( $response, true );
 			}
-			
-			$days_since = round( ( time() - self::$_results['live_stats']['last_remote_snapshot'] ) / 60 / 60 / 24, 2 );
-			$error = 'It has been `' . $days_since . '` days since the last snapshot. Current interval name: `' . $interval_display . '`. Current interval value: `' . $interval . '`. Last snapshot details (just now checked): `' . $response . '`. Last snapshot response (from last snapshot requested): `' . print_r( self::$_results['live_stats']['last_remote_snapshot_response'], true ) . '`.';
+			if ( 0 == self::$_results['live_stats']['last_remote_snapshot'] ) {
+				$error = 'It looks like your first Stash Live snapshot still has not completed. This is usually caused by a server problem resulting in a file failing to send (we won\'t count the snapshot as a success unless 100% of your data is backed up! We want your backup to be perfect!). Check your Stash Live page for details.';
+			} else {
+				$days_since = round( ( time() - self::$_results['live_stats']['last_remote_snapshot'] ) / 60 / 60 / 24, 2 );
+				$error = 'It has been `' . $days_since . '` days since the last snapshot. Current interval name: `' . $interval_display . '`. Current interval value: `' . $interval . '`. Last snapshot details (just now checked): `' . $response . '`. Last snapshot response (from last snapshot requested): `' . print_r( self::$_results['live_stats']['last_remote_snapshot_response'], true ) . '`.';
+			}
 			self::$_results['highlights'][] = $error;
 			self::$_results['alerts'][] = $error;
 		}
@@ -318,6 +321,7 @@ class backupbuddy_live_troubleshooting {
 				self::$_results['recent_waiting_on_files_time_ago'] = pb_backupbuddy::$format->time_ago( self::$_results['recent_waiting_on_files_time'] ) . ' ' . __( 'ago', 'it-l10n-backupbuddy' );
 				if ( count( self::$_results['recent_waiting_on_files'] ) > 0 ) {
 					self::$_results['highlights'][] = '`' . count( self::$_results['recent_waiting_on_files'] ) . '` total files recently needed waiting on. See "recent_waiting_on_files" section for file listing.';
+					self::$_results['alerts'][] = '`' . count( self::$_results['recent_waiting_on_files'] ) . '` total files recently needed waiting on. This could be due to these files being large or a temporary transfer error. If this lasts longer than 24 hours then there may be a problem preventing these file(s) from sending. Make sure there are no non-ascii characters in the filename. Check the log for the file transfer on the Remote Destinations page by clicking the \'View recently sent files\' button at the top then hovering the file and clicking \'View Log\' on the right. Ignore this warning if all files are at 100% as it is old and should go away soon.<br><br><b>Files possibly being waited on (' . count( self::$_results['recent_waiting_on_files'] ). '):</b><br><div style=\'height: 60px; width: 50%; white-space: nowrap; overflow: scroll; background: #EFEFEF; padding: 6px; border-radius: 5px;\'>' . implode( "<br>", self::$_results['recent_waiting_on_files'] ) . '</div>';
 				}
 			}
 		}
@@ -328,6 +332,7 @@ class backupbuddy_live_troubleshooting {
 				self::$_results['recent_waiting_on_tables_time_ago'] = pb_backupbuddy::$format->time_ago( self::$_results['recent_waiting_on_tables_time'] ) . ' ' . __( 'ago', 'it-l10n-backupbuddy' );
 				if ( count( self::$_results['recent_waiting_on_tables'] ) > 0 ) {
 					self::$_results['highlights'][] = '`' . count( self::$_results['recent_waiting_on_tables'] ) . '` total tables recently needed waiting on.';
+					self::$_results['alerts'][] = '`' . count( self::$_results['recent_waiting_on_tables'] ) . '` total database tables recently needed waiting on. This could be due to these table files being large or a temporary transfer error. If this lasts longer than 24 hours then there may be a problem preventing these table(s) from sending. Check the log for the file transfer on the Remote Destinations page by clicking the \'View recently sent files\' button at the top then hovering the database table file and clicking \'View Log\' on the right.  Ignore this warning if all database tables are at 100% as it is old and should go away soon.<br><br><b>Table files possibly being waited on (' . count( self::$_results['recent_waiting_on_tables'] ) . '):</b><br><div style=\'height: 60px; width: 50%; white-space: nowrap; overflow: scroll; background: #EFEFEF; padding: 6px; border-radius: 5px;\'>' . implode( "<br>", self::$_results['recent_waiting_on_tables'] ) . '</div>';
 				}
 			}
 		}

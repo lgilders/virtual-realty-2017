@@ -1,10 +1,30 @@
 <?php
+	
+	
 // Incoming variables: $backup from controllers/pages/_backup_home.php
 
 if ( '1' == pb_backupbuddy::_GET( 'skip_quicksetup' ) ) {
 	pb_backupbuddy::$options['skip_quicksetup'] = '1';
 	pb_backupbuddy::save();
 }
+
+
+if ( '' != pb_backupbuddy::_GET( 'rollback' ) ) {
+	require_once( pb_backupbuddy::plugin_path() . '/controllers/pages/_rollback.php' );
+	return;
+}
+
+?>
+<script type="text/javascript">
+jQuery(document).ready( function() {
+	jQuery('#screen-meta-links').append(
+		'<div id="backupbuddy-meta-link-wrap" class="hide-if-no-js screen-meta-toggle">' +
+			'<a href="?page=pb_backupbuddy_backup&wizard=1" class="show-settings no-dropdown"><?php _e( "Quick Setup Wizard", "it-l10n-backupbuddy" ); ?></a>' +
+		'</div>'
+	);
+});
+</script>
+<?php
 
 
 // Popup Quickstart modal if appears to be new install & quickstart not skip.
@@ -25,8 +45,22 @@ if (
 	pb_backupbuddy::load_view( '_quicksetup', array() );
 	return;
 } else {
-	pb_backupbuddy::$ui->title( __( 'Backup', 'it-l10n-backupbuddy' ) . ' <a href="javascript:void(0)" class="add-new-h2" onClick="jQuery(\'.backupbuddy-recent-backups\').toggle()">View recently made backups</a>' );
+	pb_backupbuddy::$ui->title( __( 'Backup', 'it-l10n-backupbuddy' ) );
+	?>
+	<script type="text/javascript">
+	jQuery(document).ready( function() {
+		jQuery('#screen-meta-links').append(
+			'<div id="backupbuddy-meta-link-wrap" class="hide-if-no-js screen-meta-toggle">' +
+				'<a href="javascript:void(0)" class="show-settings" onClick="jQuery(\'.backupbuddy-recent-backups\').toggle(); jQuery(this).toggleClass(\'screen-meta-active\'); return false;"><?php _e( 'Recently Made Backups', 'it-l10n-backupbuddy' ); ?></a>' +
+			'</div>'
+		);
+	});
+	</script>
+	<?php
 }
+
+
+
 
 
 
@@ -79,6 +113,7 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 
 ?>
 
+<br>
 <script type="text/javascript">
 	jQuery(document).ready(function() {
 		
@@ -92,22 +127,9 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 		});
 		
 		
-		// Click meta option in backup list to send a backup to a remote destination.
-		jQuery( '.pb_backupbuddy_hoveraction_send' ).click( function(e) {
-			tb_show( 'BackupBuddy', '<?php echo pb_backupbuddy::ajax_url( 'destination_picker' ); ?>&callback_data=' + jQuery(this).attr('rel') + '&sending=1&action_verb=to%20send%20to&TB_iframe=1&width=640&height=455', null );
-			return false;
-		});
-		
-		
-		// Backup listing View Hash meta clicked.
-		jQuery( '.pb_backupbuddy_hoveraction_hash' ).click( function(e) {
-			tb_show( 'BackupBuddy', '<?php echo pb_backupbuddy::ajax_url( 'hash' ); ?>&callback_data=' + jQuery(this).attr('rel') + '&TB_iframe=1&width=640&height=455', null );
-			return false;
-		});
-		
-		
 		// Click label for after backup remote send.
 		jQuery( '#pb_backupbuddy_afterbackupremote' ).click( function(e) {
+			jQuery('#pb_backupbuddy_backup_remotetitle').html('');
 			var checkbox = jQuery( '#pb_backupbuddy_afterbackupremote_box' );
 			checkbox.prop('checked', !checkbox[0].checked);
 			
@@ -120,6 +142,7 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 		
 		// Click checkbox for after backup remote send.
 		jQuery( '#pb_backupbuddy_afterbackupremote_box' ).click( function(e) {
+			jQuery('#pb_backupbuddy_backup_remotetitle').html('');
 			var checkbox = jQuery( '#pb_backupbuddy_afterbackupremote_box' );
 			if ( checkbox[0].checked ) { // Only show if just checked.
 				afterbackupremote();
@@ -137,38 +160,9 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 		// Clicked + sign to add a new profile.
 		jQuery( '#pb_backupbuddy_profileadd_plusbutton' ).click( function() {
 			jQuery(this).hide();
-			jQuery( '#pb_backupbuddy_profileadd' ).slideDown();
+			jQuery( '#pb_backupbuddy_profileadd' ).show();
 			return false;
 		});
-		
-		
-		// Click the meta option in the backup list to apply a note to a backup.
-		jQuery( '.pb_backupbuddy_hoveraction_note' ).click( function(e) {
-			
-			var existing_note = jQuery(this).parents( 'td' ).find('.pb_backupbuddy_notetext').text();
-			if ( existing_note == '' ) {
-				existing_note = 'My first backup';
-			}
-			
-			var note_text = prompt( '<?php _e( 'Enter a short descriptive note to apply to this archive for your reference. (175 characters max)', 'it-l10n-backupbuddy' ); ?>', existing_note );
-			if ( ( note_text == null ) || ( note_text == '' ) ) {
-				// User cancelled.
-			} else {
-				jQuery( '.pb_backupbuddy_backuplist_loading' ).show();
-				jQuery.post( '<?php echo pb_backupbuddy::ajax_url( 'set_backup_note' ); ?>', { backup_file: jQuery(this).attr('rel'), note: note_text }, 
-					function(data) {
-						data = jQuery.trim( data );
-						jQuery( '.pb_backupbuddy_backuplist_loading' ).hide();
-						if ( data != '1' ) {
-							alert( "<?php _e('Error', 'it-l10n-backupbuddy' );?>: " + data );
-						}
-						javascript:location.reload(true);
-					}
-				);
-			}
-			return false;
-		});
-		
 		
 		
 	}); // end jquery document ready.
@@ -180,47 +174,11 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 	}
 	
 	
-	function pb_backupbuddy_selectdestination( destination_id, destination_title, callback_data, delete_after, mode ) {
-		
-		if ( ( callback_data != '' ) && ( callback_data != 'delayed_send' ) ) {
-			jQuery.post( '<?php echo pb_backupbuddy::ajax_url( 'remote_send' ); ?>', { destination_id: destination_id, destination_title: destination_title, file: callback_data, trigger: 'manual', delete_after: delete_after }, 
-				function(data) {
-					data = jQuery.trim( data );
-					if ( data.charAt(0) != '1' ) {
-						alert( "<?php _e("Error starting remote send", 'it-l10n-backupbuddy' ); ?>:" + "\n\n" + data );
-					} else {
-						if ( delete_after == true ) {
-							var delete_alert = "<?php _e( 'The local backup will be deleted upon successful transfer as selected.', 'it-l10n-backupbuddy' ); ?>";
-						} else {
-							var delete_alert = '';
-						}
-						alert( "<?php _e('Your file has been scheduled to be sent now. It should arrive shortly.', 'it-l10n-backupbuddy' ); ?> <?php _e( 'You will be notified by email if any problems are encountered.', 'it-l10n-backupbuddy' ); ?>" + " " + delete_alert + "\n\n" + data.slice(1) );
-						/* Try to ping server to nudge cron along since sometimes it doesnt trigger as expected. */
-						jQuery.post( '<?php echo admin_url('admin-ajax.php'); ?>',
-							function(data) {
-							}
-						);
-					}
-				}
-			);
-		} else if ( callback_data == 'delayed_send' ) { // Specified a destination to send to later.
-			jQuery( '#pb_backupbuddy_backup_remotedestination' ).val( destination_id );
-			jQuery( '#pb_backupbuddy_backup_deleteafter' ).val( delete_after );
-			jQuery( '#pb_backupbuddy_backup_remotetitle' ).html( 'Destination: "' + destination_title + '".' );
-			jQuery( '#pb_backupbuddy_backup_remotetitle' ).slideDown();
-		} else {
-			window.location.href = '<?php
-			if ( is_network_admin() ) {
-				echo network_admin_url( 'admin.php' );
-			} else {
-				echo admin_url( 'admin.php' );
-			}
-			?>?page=pb_backupbuddy_backup&custom=remoteclient&destination_id=' + destination_id;
-		}
-	} // end pb_backupbuddy_selectdestination().
+	
 	
 	
 	function afterbackupremote() {
+
 		tb_show( 'BackupBuddy', '<?php echo pb_backupbuddy::ajax_url( 'destination_picker' ); ?>&callback_data=delayed_send&sending=1&action_verb=to%20send%20to&TB_iframe=1&width=640&height=455', null );
 	} // end afterbackupremote().
 	
@@ -242,18 +200,15 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 		box-shadow: 0px 3px 0px 0px #aaaaaa;
 		box-shadow: 0px 3px 0px 0px #CFCFCF;
 		font-size: auto;
-		//min-height: 65px;
 	}
 	.profile_text {
 		display: block;
 		float: left;
 		line-height: 26px;
-		//margin-right: 8px;
-		font-weight: bold;
 		padding-right: 8px;
 	}
 	.profile_type {
-		display: block;
+		display: inline-block;
 		float: left;
 		line-height: 26px;
 		margin-right: 10px;
@@ -265,18 +220,16 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 	}
 	
 	.profile_item_select,.profile_item_noselect {
-		display: block;
+		display: inline-block;
 		background: #fff;
 		border: 1px solid #e7e7e7;
 		border-top: 1px solid #ebebeb;
 		border-bottom: 1px solid #c9c9c9;
 		border-radius: 4px 0 0 4px;
-		//padding: 15px 20px 15px 15px;
-		padding: 15px 1%;
+		padding: 10px 15px;
 		margin-bottom: 10px;
 		text-decoration: none;
 		color: #252525;
-		float: left;
 		//width: 90%;
 		line-height: 2;
 		font-size: medium;
@@ -295,7 +248,9 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 	}
 	
 	.profile_item {
-		margin-right: 15px;
+		margin-right: 0;
+		display: inline-block;
+		white-space: nowrap;
 	}
 	.profile_item:hover {
 		color: #da2828;
@@ -304,7 +259,7 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 	
 	.profile_item_add_select {
 		border-radius: 4px 4px 4px 4px;
-		padding: 12px;
+		padding: 7px;
 	}
 
 	.profile_item_selected {
@@ -325,14 +280,14 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 	}
 	
 	.profile_settings {
-		display: block;
-		float: left;
+		display: inline-block;
 		height: 34px;
+		color: #cdcdcd;
 		/*
 		width: 20px;
 		padding: 11px;
 		*/
-		padding: 11px 1%;
+		padding: 12px 12px 0 11px;
 		width: 20px;
 		margin-top: 0;
 		margin-right: 12px;
@@ -345,13 +300,16 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 		
 		background-position: center;
 		background-repeat:no-repeat;
-		background-color: #fff;	
+		background-color: #fff;
 		background-size: 20px 20px;
+
+		font-size: 1.7em;
 	}
 	.profile_settings:hover {
 		background-color: #a8a8a8;
 		background-size: 20px 20px;
 		box-shadow: inset 0 0 8px #666;
+		color: #fff;
 	}
 	.profile_add {
 		display: block;
@@ -362,6 +320,15 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 	}
 	.profile_add:hover {
 		background: transparent url('<?php echo pb_backupbuddy::plugin_url(); ?>/images/dest_plus.png') bottom left no-repeat;
+	}
+
+	.bb_profile_divider {
+		display: inline-block;
+		border-right: 1px dashed #d8d8d8;
+		width: 1px;
+		margin-right: 13px;
+		height: 35px;
+		margin-bottom: 15px;
 	}
 </style>
 
@@ -523,8 +490,7 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 
 
 
-
-<div class="profile_box">
+<div class="bb-profilebox-wrap profile_box">
 	<div class="profile_choose">
 		<?php _e( 'Choose a backup profile to run:', 'it-l10n-backupbuddy' ); ?>
 	</div>
@@ -533,27 +499,35 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 	if ( true === $disableBackingUp ) {
 		echo '&nbsp;&nbsp;<span class="description">' . __( 'Backing up disabled due to errors listed above. This often caused by permission problems on files/directories. Please correct the errors above and refresh to try again.', 'it-l10n-backupbuddy' ) . '</span><br>';
 	} else {
-		foreach( pb_backupbuddy::$options['profiles'] as $profile_id => $profile ) {
-			if ( $profile['type'] == 'defaults' ) { continue; } // Skip showing defaults here...
+		function bb_home_show_profiles( $profile_id, $profile ) {
 			?>
 			<div class="profile_item">
 				<a class="profile_item_select" href="<?php echo pb_backupbuddy::page_url(); ?>&backupbuddy_backup=<?php echo $profile_id; ?>" title="Create this <?php echo $profile['type']; ?> backup.">
-					<span class="profile_type"><?php
-						if ( $profile['type'] == 'db' ) {
-							_e( 'Database', 'it-l10n-backupbuddy' );
-						} elseif ( $profile['type'] == 'full' ) {
-							_e( 'Full', 'it-l10n-backupbuddy' );
-						} elseif( $profile['type'] == 'files' ) {
-							_e( 'Files', 'it-l10n-backupbuddy' );
-						} else {
-							echo 'unknown(' . htmlentities( $profile['type'] ). ')';
-						}
-					?></span>
-					<span class="profile_text" id="profile_title_<?php echo $profile_id; ?>"><?php echo htmlentities( $profile['title'] ); ?></span>
-				</a>
-				<a href="#settings" rel="<?php echo $profile_id; ?>" class="profile_settings" style="background-image: url('<?php echo pb_backupbuddy::plugin_url(); ?>/images/dest_gear.png');" title="<?php _e( "Configure this profile's settings.", 'it-l10n-backupbuddy' ); ?>"></a>
+					<span class="profile_type profile_type-<?php echo  $profile['type']; ?>" title="><?php
+						_e( backupbuddy_core::pretty_backup_type( $profile['type'] ), 'it-l10n-backupbuddy' );
+					?>"></span>
+					<span <?php if ( ( 1 == $profile_id ) || ( 2 == $profile_id ) ) { echo 'style="font-weight: 600 !important;"'; } ?> class="profile_text" id="profile_title_<?php echo $profile_id; ?>"><?php echo htmlentities( $profile['title'] ); ?></span>
+				</a><a href="#settings" rel="<?php echo $profile_id; ?>" class="profile_settings dashicons dashicons-admin-generic" title="<?php _e( "Configure this profile's settings.", 'it-l10n-backupbuddy' ); ?>"></a>
 			</div>
 			<?php
+		}
+		// Show full and db profiles first.
+		bb_home_show_profiles( 1, pb_backupbuddy::$options['profiles'][1] );
+		bb_home_show_profiles( 2, pb_backupbuddy::$options['profiles'][2] );
+		echo '<div class="bb_profile_divider"></div>';
+		foreach( pb_backupbuddy::$options['profiles'] as $profile_id => $profile ) {
+			if ( ( 1 == $profile_id ) || ( 2 == $profile_id ) ) { // skip full and db since shown above.
+				continue;
+			}
+			if ( 0 == $profile_id ) { // Skip showing defaults here...
+				if ( isset( pb_backupbuddy::$options['profiles'][3] ) ) {
+					//echo '<hr style="clear: both;">';
+					echo '<div class="bb_profile_divider"></div>';
+				}
+				continue;
+			}
+			bb_home_show_profiles( $profile_id, $profile );
+
 		}
 		?>
 		
@@ -564,19 +538,24 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 		</div>
 		
 		<div class="profile_item" id="pb_backupbuddy_profileadd" style="display: none;" href="<?php echo pb_backupbuddy::ajax_url( 'backup_profile_settings' ); ?>&profile=<?php echo $profile_id; ?>">
-			<div class="profile_item_noselect" style="padding: 11px;">
+			<div class="profile_item_noselect" style="padding: 6px;">
 				<form method="post" action="?page=pb_backupbuddy_backup" style="white-space:nowrap;">
 					<?php pb_backupbuddy::nonce(); ?>
 					<input type="hidden" name="add_profile" value="true">
-					<span class="profile_type">
+					<span class="profile_text"><input type="text" style="padding: 6px;" name="title" maxlength="20" placeholder="<?php _e( 'New profile title...', 'it-l10n-backupbuddy' ); ?>"></span>
+					<span class="profile_type" style="margin-right: 0;">
 						<select name="type">
-							<option value="db"><?php _e( 'Database only', 'it-l10n-backupbuddy' ); ?></option>
-							<option value="full"><?php _e( 'Full (DB + Files)', 'it-l10n-backupbuddy' ); ?></option>
-							<option value="files"><?php _e( 'Files only', 'it-l10n-backupbuddy' ); ?></option>
+							<option value="db"><?php _e( 'Database Only', 'it-l10n-backupbuddy' ); ?></option>
+							<option value="full"><?php _e( 'Full (Files & Database)', 'it-l10n-backupbuddy' ); ?></option>
+							<option disabled="disabled">---------------</option>
+							<option value="themes"><?php _e( 'Themes Only', 'it-l10n-backupbuddy' ); ?></option>
+							<option value="plugins"><?php _e( 'Plugins Only', 'it-l10n-backupbuddy' ); ?></option>
+							<option value="media"><?php _e( 'Media Only', 'it-l10n-backupbuddy' ); ?></option>
+							<option disabled="disabled">---------------</option>
+							<option value="files"><?php _e( 'Custom Files', 'it-l10n-backupbuddy' ); ?></option>
 						</select>
 					</span>
-					<span class="profile_text"><input type="text" name="title" style="width: 150px" maxlength="20" placeholder="<?php _e( 'New profile title...', 'it-l10n-backupbuddy' ); ?>"></span>
-					<input type="submit" name="submit" value="+ <?php _e( 'Add', 'it-l10n-backupbuddy' ); ?>" class="button button-primary" style="vertical-align: 3px; margin-left: 3px;">
+					<input type="submit" name="submit" value="+ <?php _e( 'Add', 'it-l10n-backupbuddy' ); ?>" class="button button-primary" style="vertical-align: 0;">
 				</form>
 			</div>
 		</div>
@@ -584,7 +563,7 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 		<br style="clear: both;">
 		
 		<!-- Remote send after successful backup? -->
-		<div style="clear: both; padding-left: 4px;">
+		<div class="bb-remote-checkbox" style="clear: both; padding-left: 4px;">
 			<input type="checkbox" name="pb_backupbuddy_afterbackupremote" id="pb_backupbuddy_afterbackupremote_box"> <label id="pb_backupbuddy_afterbackupremote" for="pb_backupbuddy_afterbackupremote">Send to remote destination as part of backup process. <span id="pb_backupbuddy_backup_remotetitle"></span></label>
 			
 			<input type="hidden" name="remote_destination" id="pb_backupbuddy_backup_remotedestination">
@@ -595,6 +574,11 @@ if ( pb_backupbuddy::_POST( 'add_profile' ) == 'true' ) {
 	<br style="clear: both;">
 	
 </div>
+
+
+
+
+
 
 
 

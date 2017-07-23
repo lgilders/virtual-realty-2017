@@ -1,12 +1,6 @@
 <?php
-// Tutorial
-pb_backupbuddy::load_script( 'jquery.joyride-2.0.3.js' );
-pb_backupbuddy::load_script( 'modernizr.mq.js' );
-pb_backupbuddy::load_style( 'joyride.css' );
-
-
-
 if ( !defined( 'PB_IMPORTBUDDY' ) ) { // NOT IN IMPORTBUDDY:
+
 	wp_enqueue_script( 'thickbox' );
 	wp_print_scripts( 'thickbox' );
 	wp_print_styles( 'thickbox' );
@@ -24,31 +18,6 @@ if ( !defined( 'PB_IMPORTBUDDY' ) ) { // NOT IN IMPORTBUDDY:
 		margin-right: 5px;
 	}
 	</style>
-	<script type="text/javascript">
-	jQuery(document).ready( function() {
-		jQuery('#screen-meta-links').append(
-			'<div id="backupbuddy-meta-link-wrap" class="hide-if-no-js screen-meta-toggle">' +
-				'<a href="" class="show-settings pb_backupbuddy_begintour"><?php _e( "Tour Page", "it-l10n-backupbuddy" ); ?></a>' +
-			'</div>'
-		);
-	});
-	</script>
-	<ol id="pb_backupbuddy_tour" style="display: none;">
-		<li data-class="nav-tab-0">View server configuration details, security information, server paths, etc.</li>
-		<li data-class="nav-tab-1">View database information as well as tables excluded from backups.</li>
-		<li data-class="nav-tab-2">View your site's files in either a graphical format or a listing. The listing also notes exclusions from backups.</li>
-		<li data-class="nav-tab-3" data-button="Finish">Additional site tools for managing CRON schedules and database text search & replace.</li>
-	</ol>
-	<script>
-	jQuery(window).load(function() {
-		jQuery(document).on( 'click', '.pb_backupbuddy_begintour', function(e) {
-			jQuery("#pb_backupbuddy_tour").joyride({
-				tipLocation: 'top',
-			});
-			return false;
-		});
-	});
-	</script>
 
 	<?php
 
@@ -131,6 +100,10 @@ if ( !defined( 'PB_IMPORTBUDDY' ) ) { // NOT IN IMPORTBUDDY:
 		$wp_settings[] = array( 'BackupBuddy local storage', backupbuddy_core::getBackupDirectory(), 'BackupBuddy Settings' );
 		$wp_settings[] = array( 'BackupBuddy temporary files', backupbuddy_core::getTempDirectory(), 'ABSPATH + Hardcoded location' );
 		$wp_settings[] = array( 'BackupBuddy logs', backupbuddy_core::getLogDirectory(), 'Upload Base + BackupBuddy' );
+		
+		$wp_settings[] = array( 'Themes root', backupbuddy_core::get_themes_root(), 'backupbuddy_core::get_themes_root()' );
+		$wp_settings[] = array( 'Plugins root', backupbuddy_core::get_plugins_root(), 'backupbuddy_core::get_plugins_root()' );
+		$wp_settings[] = array( 'Media root', backupbuddy_core::get_media_root(), 'backupbuddy_core::get_media_root()' );
 		
 		// Display WP settings..
 		pb_backupbuddy::$ui->list_table(

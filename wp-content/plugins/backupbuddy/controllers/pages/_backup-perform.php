@@ -65,6 +65,8 @@ if ( pb_backupbuddy::_GET( 'backupbuddy_backup' ) == 'export' ) { // EXPORT.
 	}
 }
 
+$profile_array = array_merge( pb_backupbuddy::$options['profiles'][0], $profile_array ); // Merge defaults.
+
 
 // Set up $deployData if deployment.
 if ( 'deploy' == pb_backupbuddy::_GET( 'backupbuddy_backup' ) ) {
@@ -110,9 +112,9 @@ if ( 'deploy' == pb_backupbuddy::_GET( 'backupbuddy_backup' ) ) {
 	}
 </style>
 <script type="text/javascript">
-	window.onerror=function( errorMsg, url, lineNumber ){
+	window.onerror=function( errorMsg, url, lineNumber, colNumber, error ){
 		alert( "Error #82389: <?php _e( 'A javascript error occurred which may prevent the backup from continuing. Check your browser error console for details. This is most often caused by another plugin or theme containing broken javascript. See details below for clues or try temporarily disabling all other plugins.', 'it-l10n-backupbuddy' ); ?>\n\nDetails: `" + errorMsg + "`.\n\nURL: `" + url + "`.\n\nLine: `" + lineNumber + "`." );
-		backupbuddy_log( 'Javascript Error. Message: `' + errorMsg + '`, URL: `' + url + '`, Line: `' + lineNumber + '`.' ); // Attempt to log.
+		backupbuddy_log( 'Javascript Error. Message: `' + errorMsg + '`, URL: `' + url + '`, Line: `' + lineNumber + '`, Col: `' + colNumber + '`, Trace: `' + error.stack + '`.' ); // Attempt to log.
 	}
 	
 	var statusBox; // #backupbuddy_messages
@@ -191,7 +193,7 @@ if ( 'deploy' == pb_backupbuddy::_GET( 'backupbuddy_backup' ) ) {
 		
 		<?php
 		// For MODERN mode we will wait until the DOM fully loads before beginning polling the server status.
-		if ( pb_backupbuddy::$options['backup_mode'] != '1' ) { // NOT classic mode. Run once doc ready.
+		if ( $profile_array['backup_mode'] != '1' ) { // NOT classic mode. Run once doc ready.
 			echo "setTimeout( 'backupbuddy_poll()', 500 );";
 		}
 		?>
@@ -310,7 +312,7 @@ if ( 'deploy' == pb_backupbuddy::_GET( 'backupbuddy_backup' ) ) {
 	
 	
 	<?php
-	if ( pb_backupbuddy::$options['backup_mode'] == '1' ) { // CLASSIC mode. Run right away so we can show output before page finishes loading (backup fully finishes).
+	if ( $profile_array['backup_mode'] == '1' ) { // CLASSIC mode. Run right away so we can show output before page finishes loading (backup fully finishes).
 		echo "setTimeout( 'backupbuddy_poll()', 2000 );";
 	}
 	?>
@@ -480,6 +482,10 @@ if ( 'deploy' == pb_backupbuddy::_GET( 'backupbuddy_backup' ) ) {
 	function backupbuddy_hourpad(n) { return ("0" + n).slice(-2); }
 	
 	
+	backup_maybe_timed_out = 'Creating the backup archive may have timed out';
+	backup_db_maybe_timed_out = 'Creating the database backup archive may have timed out';
+	
+	
 	function backupbuddy_poll() {
 		if ( keep_polling != 1 ) {
 			if ( '' != statusBoxQueue ) { // If something left in queue then push it out. Should be checked elsewhere but just in case...
@@ -499,10 +505,12 @@ if ( 'deploy' == pb_backupbuddy::_GET( 'backupbuddy_backup' ) ) {
 			backupbuddy_log( '***', 'notice' );
 			backupbuddy_log( thisMessage, 'notice' );
 			backupbuddy_log( '***', 'notice' );
-			errorHelp( 'Creating the backup archive may have timed out', thisMessage );
+			errorHelp( backup_maybe_timed_out, thisMessage );
 			
 			stale_archive_time_trigger = 60 * 5 * stale_archive_time_trigger_increment;
 			stale_archive_time_trigger_increment++;
+		} else {
+			jQuery( '.backup-step-error-message_' + bb_hashCode( backup_maybe_timed_out ) ).slideUp();
 		}
 		
 		// Check to make sure sql dump size is increasing. Warn if it seems to hang.
@@ -516,6 +524,8 @@ if ( 'deploy' == pb_backupbuddy::_GET( 'backupbuddy_backup' ) ) {
 			
 			stale_sql_time_trigger = 60 * 5 * stale_sql_time_trigger_increment;
 			stale_sql_time_trigger_increment++;
+		} else {
+			jQuery( '.backup-step-error-message_' + bb_hashCode( backup_db_maybe_timed_out ) ).slideUp();
 		}
 		
 		specialAction = '';
@@ -813,7 +823,7 @@ if ( 'deploy' == pb_backupbuddy::_GET( 'backupbuddy_backup' ) ) {
 			return; // Already been shown on page.
 		}
 		shownErrorHelps.push( title ); // Add to list of shown errors so it will not be shown multiple times.
-		errorHTML = '<div class="backup-step-error-message"><h3>' + title + '</h3>' + message + '</div>';
+		errorHTML = '<div class="backup-step-error-message backup-step-error-message_' + bb_hashCode( title ) + '"><h3>' + title + '</h3>' + message + '</div>';
 		
 		if ( jQuery('.backup-step-active').length > 0 ) { // Target active function if currently is one, else target one after last to finish.
 			targetObj = jQuery('.backup-step-active');
@@ -825,6 +835,17 @@ if ( 'deploy' == pb_backupbuddy::_GET( 'backupbuddy_backup' ) ) {
 		// Make Status tab red.
 		jQuery( '.nav-tab-1' ).addClass( 'bb-nav-status-tab-error' );
 	}
+	
+	bb_hashCode = function( text ) {
+	  var hash = 0, i, chr;
+	  if (text.length === 0) return hash;
+	  for (i = 0; i < text.length; i++) {
+	    chr   = text.charCodeAt(i);
+	    hash  = ((hash << 5) - hash) + chr;
+	    hash |= 0; // Convert to 32bit integer
+	  }
+	  return hash;
+	};
 </script>
 
 
@@ -1072,14 +1093,14 @@ if ( 'deploy' == pb_backupbuddy::_GET( 'backupbuddy_backup' ) ) {
 			array(
 				'title'		=>		__( 'Overview', 'it-l10n-backupbuddy' ),
 				'slug'		=>		'general',
-				'css'		=>		'margin-top: -11px;',
+				'css'		=>		'margin-top: -8px;',
 			),
 			
 			
 			array(
 				'title'		=>		__( 'Status Log', 'it-l10n-backupbuddy' ),
 				'slug'		=>		'advanced',
-				'css'		=>		'margin-top: -11px;',
+				'css'		=>		'margin-top: -8px;',
 			),
 		),
 		'width: 100%;',
@@ -1232,7 +1253,7 @@ if ( 'deploy' == pb_backupbuddy::_GET( 'backupbuddy_backup' ) ) {
 
 
 <?php
-if ( pb_backupbuddy::$options['backup_mode'] == '1' ) { // Classic mode (all in one page load).
+if ( $profile_array['backup_mode'] == '1' ) { // Classic mode (all in one page load).
 	?>
 	<br><br>
 	<div style="width: 100%">

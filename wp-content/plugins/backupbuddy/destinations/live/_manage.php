@@ -42,7 +42,7 @@ pb_backupbuddy::alert( '{error placeholder}', false, $error_code = '', $rel_tag 
 <?php
 // Incoming vars: $destination, $destination_id
 if ( isset( $destination['disabled'] ) && ( '1' == $destination['disabled'] ) ) {
-	die( __( 'This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.', 'it-l10n-backupbuddy' ) );
+	die( __( '<span class="description">This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.</span>', 'it-l10n-backupbuddy' ) );
 }
 
 wp_enqueue_script( 'thickbox' );
@@ -79,6 +79,40 @@ if ( isset( $completion_css ) ) {
 	pb_backupbuddy::disalert( 'live_first_completion_done', '<h3>' . __( 'Your first Live Backup is complete!', 'it-l10n-backupbuddy' ) . '</h3><p class="description" style="max-width: 700px; display: inline-block;">' . __( 'Your first BackupBuddy Stash Live backup process has completed and your first Snapshot will arrive in your Stash storage shortly. We\'ll automatically backup any changes you make to your site from here on out and regularly create Snapshots in time of your data. Your site is well on its way to a secure future in the safe hands of BackupBuddy Stash Live.', 'it-l10n-backupbuddy' ) . '</p>', $error = false, $completion_css );
 }
 
+
+
+function bb_show_unsent_files( $show_permissions = true ) {
+	// Set up ZipBuddy when within BackupBuddy
+	require_once( pb_backupbuddy::plugin_path() . '/lib/zipbuddy/zipbuddy.php' );
+	pb_backupbuddy::$classes['zipbuddy'] = new pluginbuddy_zipbuddy( backupbuddy_core::getBackupDirectory() );
+	
+	echo '<h3>Unsent Files Listing (except deleted):</h3>';
+	$catalog = backupbuddy_live_periodic::get_catalog();
+	$unsent = array();
+	foreach( $catalog as $file => $catalogItem ) {
+		if ( !isset( $catalogItem['s'] ) || ( 0 == $catalogItem['s'] ) ) {
+			if ( isset( $catalogItem['d'] ) && ( true === $catalogItem['d'] ) ) { // Don't list items pending delete since we will not send this anyways.
+				continue;
+			}
+			
+			$details = '';
+			if ( true === $show_permissions ) {
+				$stats = pluginbuddy_stat::stat( ABSPATH . $file );
+				if ( false !== $stats ) {
+					$mode_octal_four = $stats['mode_octal_four'];
+					$owner = $stats['uid'] . ':' . $stats['gid'];
+					$details = ' - Perm: ' . $mode_octal_four . ' - Owner: ' . $owner;
+				} else {
+					$details = ' - [UNKNOWN PERMISSIONS]';
+				}
+			}
+			
+			$unsent[] = $file . $details;
+		}
+	}
+	echo '<textarea readonly="readonly" style="width: 100%;" wrap="off" cols="65" rows="20">--- TOTAL PENDING SEND: ' . count( $unsent ) . " ---\n" . implode( "\n", $unsent ) . '</textarea>';
+	echo '<br><br><br>';
+}
 
 // RUN ACTIONS FROM BUTTON PRESS.
 if ( '' != pb_backupbuddy::_GET( 'live_action' ) ) {
@@ -186,6 +220,14 @@ if ( '' != pb_backupbuddy::_GET( 'live_action' ) ) {
 		echo '<textarea readonly="readonly" style="width: 100%;" wrap="off" cols="65" rows="20">' . print_r( $catalog, true ) . '</textarea>';
 		echo '<br><br><br>';
 		
+	} elseif ( 'view_unsent_files' == $action ) {
+		
+		bb_show_unsent_files( true );
+		
+	} elseif ( 'view_unsent_files_noperms' == $action ) {
+		
+		bb_show_unsent_files( false );
+		
 	} elseif ( 'view_signatures_raw' == $action ) {
 		
 		echo '<h3>Local Catalog File Signatures (raw - contents and file count may fluctuate if periodic files process is not pasued):</h3>';
@@ -195,20 +237,17 @@ if ( '' != pb_backupbuddy::_GET( 'live_action' ) ) {
 	
 	} elseif ( 'troubleshooting' == $action ) {
 		
-		echo '<h3>Stash Live Troubleshooting:</h3>';
+		echo '<h3>Stash Live Troubleshooting Scan Details</h3>';
 		
 		require( '_troubleshooting.php' );
 		backupbuddy_live_troubleshooting::run();
 		$results = backupbuddy_live_troubleshooting::get_raw_results();
 		
-		$download_button = '<div style="text-align: center; margin: 15px;">
-			<button class="button button-primary" onClick="backupbuddy_save_textarea_as_file(\'#backupbuddy_live_troubleshooting_results\', \'stash_live_troubleshooting\' );" style="margin-left: auto; margin-right: auto; display: inherit; font-size: 0.9em;">Download Troubleshooting Log (.txt)</button>
-		</div>';
-		echo $download_button;
-		echo '<textarea readonly="readonly" style="width: 100%;" wrap="off" cols="65" rows="30" id="backupbuddy_live_troubleshooting_results">' . print_r( $results, true ) . '</textarea>';
-		echo $download_button;
+		echo '<button style="margin-bottom: 10px;" class="button button-primary" onClick="backupbuddy_save_textarea_as_file(\'#backupbuddy_live_troubleshooting_results\', \'stash_live_troubleshooting\' );">Download Troubleshooting Log (.txt)</button>';
+		echo '<textarea readonly="readonly" style="width: 100%;" wrap="off" cols="65" rows="10" id="backupbuddy_live_troubleshooting_results">' . print_r( $results, true ) . '</textarea><br>';
+		echo '<button style="margin-top: 10px;" class="button button-primary" onClick="backupbuddy_save_textarea_as_file(\'#backupbuddy_live_troubleshooting_results\', \'stash_live_troubleshooting\' );">Download Troubleshooting Log (.txt)</button>';
 		
-		echo '<br><br><br>';
+		echo '<br><br><br><br>';
 	
 	
 	} elseif ( 'last_snapshot_details' == $action ) {
@@ -224,7 +263,7 @@ if ( '' != pb_backupbuddy::_GET( 'live_action' ) ) {
 			echo '<b>Status as reported from server as of just now:</b><br>';
 			$response = pb_backupbuddy_destination_live::stashAPI( $destination_settings, 'live-snapshot-status', $additionalParams );
 			if ( ! is_array( $response ) ) {
-				pb_backupbuddy::alert( 'Error #3497943: Unable to get Live snapshot status. Details: `' . $response . '`.' );
+				pb_backupbuddy::alert( 'Error #3497943b: Unable to get Live snapshot status. Details: `' . $response . '`.' );
 			} else {
 				echo '<textarea readonly="readonly" style="width: 100%;" wrap="off" cols="65" rows="15">' . print_r( $response, true ) . '</textarea>';
 				echo '<br><br>';
@@ -259,7 +298,7 @@ if ( '' != pb_backupbuddy::_GET( 'live_action' ) ) {
 				$delete = __( 'No', 'it-l10n-backupbuddy' );
 				$siteSize += $signature['s']; // File not marked for deletion.
 			}
-			if ( '' == $signature['h'] ) {
+			if ( !isset( $signature['h'] ) && ( '' == $signature['h'] ) ) {
 				$hash = 'n/a';
 			} else {
 				$hash = $signature['h'];
@@ -274,14 +313,17 @@ if ( '' != pb_backupbuddy::_GET( 'live_action' ) ) {
 			} else {
 				$audited = $signature['v'];
 			}
+			$tries = '0';
+			if ( isset( $signature['t'] ) ) {
+				$tries = (string)$signature['t'];
+			}
 			$catalogTable[ $filename ] = array(
 				$filename,
 				(string)$signature['s'],
-				(string)$signature['a'],
 				$modified,
 				$sent,
 				$audited,
-				(string)$signature['t'],
+				$tries,
 				$delete,
 				$hash,
 			);
@@ -298,7 +340,6 @@ if ( '' != pb_backupbuddy::_GET( 'live_action' ) ) {
 				'columns'					=>	array(
 													__( 'Files', 'it-l10n-backupbuddy' ),
 													__( 'Size', 'it-l10n-backupbuddy' ),
-													__( 'Added', 'it-l10n-backupbuddy' ),
 													__( 'Modified', 'it-l10n-backupbuddy' ),
 													__( 'Sent', 'it-l10n-backupbuddy' ),
 													__( 'Audited', 'it-l10n-backupbuddy' ),
@@ -470,7 +511,7 @@ if ( '' != pb_backupbuddy::_GET( 'live_action' ) ) {
 
 $troubleshooting_alerts_file = backupbuddy_core::getLogDirectory() . 'live/troubleshooting_alerts-' . pb_backupbuddy::$options['log_serial'] . '.txt';
 if ( false !== ( $troubleshooting_alerts = @file_get_contents( $troubleshooting_alerts_file ) ) ) {
-	pb_backupbuddy::disalert( 'troubleshooting_' . md5( $troubleshooting_alerts ), '<h3>' . __( 'Possible Problem Detected', 'it-l10n-backupbuddy' ) . '</h3><p class="description" style="max-width: 700px; display: inline-block;">' . __( 'One or more potential problems may have been detected. If you are experiencing problems with Stash Live the following information may help address your issue. If you are not experiencing issues you may dismiss this instance of this notice with the "Dismiss" link to the right. It will also automatically go away after a successful snapshot after the potential problem is corrected. Your host may be able to assist in correcting this issue.', 'it-l10n-backupbuddy' ) . '</p><br><br><b>Details:</b><br><br>' . $troubleshooting_alerts, $error = true );
+	pb_backupbuddy::disalert( 'troubleshooting_' . md5( $troubleshooting_alerts ), '<h3>' . __( 'Possible Problem Detected', 'it-l10n-backupbuddy' ) . '</h3><p class="description" style="display: inline-block;">' . __( 'One or more potential problems may have been detected. If you are experiencing problems with Stash Live the following information may help address your issue. If you are not experiencing issues you may dismiss this instance of this notice with the "Dismiss" link to the right. It will also automatically go away after a successful snapshot after the potential problem is corrected. Your host may be able to assist in correcting this issue.', 'it-l10n-backupbuddy' ) . '</p><br><br><h3>Details</h3><br>' . $troubleshooting_alerts, $error = true );
 }
 
 if ( backupbuddy_core::detectMaxExecutionTime() < 28 ) {
@@ -839,10 +880,12 @@ if ( count( $cron_warnings ) > 2 ) {
 				<span class="backupbuddy-live-stats-currently-text">
 					<span class="backupbuddy-inline-label"><?php _e( 'Currently', 'it-l10n-backupbuddy' ); ?></span>: {{ stats.current_function_pretty }}
 				</span>
-				<div class="backupbuddy-live-stats-help">
-					<a href="https://ithemes.com/support/" class="backupbuddy-live-button secondary" target="_blank"><?php _e( 'Need Help?', 'it-l10n-backupbuddy' ); ?></a>
+				<?php /*
+				<div class="backupbuddy-live-stats-help" style="margin-top: 15px;">
+					<a href="https://ithemes.com/support/" class="backupbuddy-live-button secondary" target="_blank"><?php _e( 'Need Help?', 'it-l10n-backupbuddy' ); ?></a
 					<span class="backupbuddy-live-stats-version-number">v<?php echo pb_backupbuddy::settings( 'version' ) ?></span>
 				</div>
+				*/ ?>
 			</div>
 		</div>
 		<div class="col col-2-3">
@@ -977,7 +1020,7 @@ if ( count( $cron_warnings ) > 2 ) {
 		</div>
 		<div class="col col-1-3">
 			<div class="backupbuddy-live-stats-overview">
-				<h3><?php _e( 'BackupBuddy Stash Live requested new snapshot files', 'it-l10n-backupbuddy' ); ?>:</h3>
+				<h3><?php _e( 'BackupBuddy' ); ?> v<?php echo pb_backupbuddy::settings( 'version' ) ?> <?php _e( 'requested new Stash Live snapshot files', 'it-l10n-backupbuddy' ); ?>:</h3>
 				<div class="backupbuddy-stats-time-ago">{{ stats.last_remote_snapshot_ago }}</div>
 				<a href="javascript:void(0);" class="backupbuddy-stats-help-link">
 					<?php _e( 'View Last Snapshot Details', 'it-l10n-backupbuddy' ); ?></a>
@@ -1017,10 +1060,6 @@ if ( count( $cron_warnings ) > 2 ) {
 
 <?php // Display remote files stored in Stash. ?>
 <br style="clear: both;"><br>
-<h3><?php _e( 'Stash Live Remote Snapshot Files', 'it-l10n-backupbuddy' ); ?></h3>
-<p class="description restrict-length">
-	<?php echo sprintf( __( 'Below is a listing of your Snapshot zip files stored in Stash. You can copy these files locally, download them for use, or <a href="%s" target="_blank">manage them in iThemes Sync</a>, including traditional backups sent to a Stash destination. To learn more about managing your Stash Storage, <a href="%s" target="_blank">click here</a>.  ', 'it-l10n-backupbuddy'), 'https://sync.ithemes.com/stash', 'https://ithemes.com/backupbuddy-stash' ); ?>
-</p>
 
 <div class="backupbuddy_live_iframe_load">
 	<img src="<?php echo pb_backupbuddy::plugin_url(); ?>/images/loading.gif" title="Loading... This may take a few seconds..." style="vertical-align: -3px;"> <?php _e( 'Loading remote Snapshot files list...', 'it-l10n-backupbuddy' ); ?>
@@ -1148,6 +1187,8 @@ if ( count( $cron_warnings ) > 2 ) {
 	<a href="<?php echo pb_backupbuddy::nonce_url( $admin_url . '?page=pb_backupbuddy_live&live_action=view_state' ); ?>" class="button button-secondary button-tertiary">View Entire State</a>
 	<a href="<?php echo pb_backupbuddy::nonce_url( $admin_url . '?page=pb_backupbuddy_live&live_action=view_raw_settings' ); ?>" class="button button-secondary button-tertiary">View Settings</a>
 	<a href="<?php echo pb_backupbuddy::nonce_url( $admin_url . '?page=pb_backupbuddy_live&live_action=view_stats' ); ?>" class="button button-secondary button-tertiary">View Stats</a>
+	<a href="<?php echo pb_backupbuddy::nonce_url( $admin_url . '?page=pb_backupbuddy_live&live_action=view_unsent_files' ); ?>" class="button button-secondary button-tertiary">View Unsent Files</a>
+	<a href="<?php echo pb_backupbuddy::nonce_url( $admin_url . '?page=pb_backupbuddy_live&live_action=view_unsent_files_noperms' ); ?>" class="button button-secondary button-tertiary">View Unsent Files (hide permissions info)</a>
 	
 	<h4>Pretty Data:</h4>
 	<a href="<?php echo pb_backupbuddy::nonce_url( $admin_url . '?page=pb_backupbuddy_live&live_action=view_signatures' ); ?>" class="button button-secondary button-tertiary">View Formatted Catalog Files</a>

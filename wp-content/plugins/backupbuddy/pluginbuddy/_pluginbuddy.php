@@ -420,8 +420,15 @@ class pb_backupbuddy {
 					}
 				}
 			}
-		} else {
-			$options = array_merge( (array)self::settings( 'default_options' ), (array)self::$options );
+		} else { // Normal merge.
+			$defaults = (array)self::settings( 'default_options' );
+
+			// Apply defaults.
+			$options = array_merge( $defaults, (array)self::$options );
+			//self::$options['profiles'] = array(); // Reset profiles.
+
+			// Apply default profiles.
+			$options['profiles'] = (array)self::$options['profiles'] + $defaults['profiles']; // Merge arrays on numeric indices. Left side is preserved (opposite of array_merge()).
 		}
 		if ( self::$options !== $options ) {
 			self::$options = $options;

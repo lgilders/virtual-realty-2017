@@ -327,7 +327,7 @@ pb_backupbuddy::load_style( 'quicksetup.css' );
 				</div>
 			</div>
 		</div>
-		<div class="step schedule" style="display: none;">
+		<div class="step schedule">
 			<h4><span class="number">4.</span> How often do you want to schedule backups of your site?</h4>
 			<div class="backupbuddy-quickstart-indent">
 				<div id="schedule" class="box-options clearfix">

@@ -655,6 +655,10 @@ class pb_backupbuddy_mysqlbuddy {
 				// Disable keys for this table.
 				$insert_sql .= "/*!40000 ALTER TABLE `{$table}` DISABLE KEYS */;\n";
 				
+				// Disable foreign key and unique checks temporarily to help avoid errors.
+				$insert_sql .= "SET FOREIGN_KEY_CHECKS = 0;\n";
+				$insert_sql .= "SET UNIQUE_CHECKS = 0;\n";
+				
 			}
 
 			$queryCount = 0;
@@ -745,6 +749,8 @@ class pb_backupbuddy_mysqlbuddy {
 			
 			// Re-enable keys for this table.
 			$insert_sql .= "/*!40000 ALTER TABLE `{$table}` ENABLE KEYS */;\n";
+			$insert_sql .= "SET FOREIGN_KEY_CHECKS = 1;\n";
+			$insert_sql .= "SET UNIQUE_CHECKS = 1;\n";
 			$writeReturn = fwrite( $file_handle, $insert_sql );
 			if ( ( false === $writeReturn ) || ( 0 == $writeReturn ) ) {
 				pb_backupbuddy::status( 'error', 'Error #843948: Unable to write to SQL file. Return error/bytes written: `' . $writeReturn . '`.' );
@@ -799,7 +805,7 @@ class pb_backupbuddy_mysqlbuddy {
 	 *	@param		string		$sql_file				Full absolute path to .sql file to import from.
  	 *	@param		string		$old_prefix				Old database prefix. New prefix provided in constructor.
  	 *	@param		int			$query_start			Query number (aka line number) to resume import at.
- 	 *	@param		boolean		$ignore_existing		Whether or not to allow import if tables exist already. Default: false.
+ 	 *	@param		boolean		$ignore_existing		NOTE: Basically ignores mysql errors these days. Past purpose: Whether or not to allow import if tables exist already. Default: false.
 	 *	@return		mixed								true on success (boolean)
 	 *													false on failure (boolean)
 	 *													integer (int) on needing a resumse (integer is resume number for next page loads $query_start)
@@ -817,6 +823,10 @@ class pb_backupbuddy_mysqlbuddy {
 			pb_backupbuddy::status( 'message', 'Continuing to restore database dump starting at file location `' . $query_start . '`.' );
 		} else {
 			pb_backupbuddy::status( 'message', 'Restoring database dump. This may take a moment...' );
+		}
+		
+		if ( true === $ignore_existing ) {
+			pb_backupbuddy::status( 'details', 'Option set to ignore mysql errors/existing tables.' );
 		}
 		
 		global $wpdb;
@@ -1088,10 +1098,11 @@ class pb_backupbuddy_mysqlbuddy {
 	 *
 	 *	@param		string		$query			Query string to run for importing.
 	 *	@param		string		$old_prefix		Old prefix. (new prefix was passed in constructor).
+	 *	@param		bool			$ignore_existing	If true suppress mysql errors.
 	 *	@return		boolean						True=success, False=failed.
 	 *
 	 */
-	function _import_sql_dump_line( $query, $old_prefix, $ignore_existing ) {
+	function _import_sql_dump_line( $query, $old_prefix, $ignore_existing = false ) {
 		$new_prefix = $this->_database_prefix;
 		
 		$query_operators = 'INSERT INTO|CREATE TABLE|REFERENCES|CONSTRAINT|ALTER TABLE|\/\*!\d+\s+ALTER TABLE';
@@ -1148,8 +1159,7 @@ class pb_backupbuddy_mysqlbuddy {
 				}
 				
 				@file_put_contents( $mysql_9010_log,
-					"QUERY from file `" . $this->_current_sql_file . "`:\n" . $query .
-					"ERROR:\n" . $mysql_error . "\n\n",
+					"QUERY from file `" . $this->_current_sql_file . "`:\n" . $query . "\nERROR:\n" . $mysql_error . "\n\n",
 					FILE_APPEND
 				);
 				

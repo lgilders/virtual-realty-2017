@@ -1,6 +1,6 @@
 <?php
 if ( isset( $destination['disabled'] ) && ( '1' == $destination['disabled'] ) ) {
-	die( __( 'This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.', 'it-l10n-backupbuddy' ) );
+	die( __( '<span class="description">This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.</span>', 'it-l10n-backupbuddy' ) );
 }
 
 // Settings.
@@ -82,7 +82,8 @@ $info = pb_backupbuddy_destination_gdrive::getDriveInfo( $settings );
 
 $folderMeta = pb_backupbuddy_destination_gdrive::getFileMeta( $settings, $folderID );
 if ( false === $folderMeta ) {
-	pb_backupbuddy::alert( 'Error connecting to Google Drive.' );
+	global $bb_gdrive_error;
+	pb_backupbuddy::alert( 'Error connecting to Google Drive. ' . $bb_gdrive_error );
 	?>
 	<script>jQuery( '#backupbuddy_gdrive_loading' ).hide();</script>
 	<?php
@@ -91,7 +92,11 @@ if ( false === $folderMeta ) {
 //echo '<h3>Files in folder "<a href="' . $folderMeta->alternateLink . '" target="_new">' . $folderMeta->title . '</a>" <span style="font-size: 0.6em;">(Used ' . pb_backupbuddy::$format->file_size( $info['quotaUsed'] ) . ' of ' . pb_backupbuddy::$format->file_size( $info['quotaTotal'] ) . ' available space)</span></h3>';
 
 $usagePercent = ceil( ( $info['quotaUsed'] / $info['quotaTotal'] ) * 100 );
-echo '<center><b>Usage</b>:&nbsp; ' . pb_backupbuddy::$format->file_size( $info['quotaUsed'] ) . ' &nbsp;of&nbsp; ' . pb_backupbuddy::$format->file_size( $info['quotaTotal'] ) . ' &nbsp;( ' . $usagePercent . ' % )</center>';
+echo '<center><b>Usage</b>:&nbsp; ' . pb_backupbuddy::$format->file_size( $info['quotaUsed'] ) . ' &nbsp;of&nbsp; ' . pb_backupbuddy::$format->file_size( $info['quotaTotal'] ) . ' &nbsp;( ' . $usagePercent . ' % )';
+if ( '' != $settings['service_account_file'] ) {
+	echo ' [Service Account]';
+}
+echo '</center>';
 
 
 

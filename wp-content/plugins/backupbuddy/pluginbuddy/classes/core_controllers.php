@@ -206,7 +206,7 @@ class pb_backupbuddy_pagescore {
 			
 			// Display page.
 			pb_backupbuddy::load_script( 'admin.js', true );
-			pb_backupbuddy::load_style( 'admin.css', true );
+			pb_backupbuddy::load_style( 'admin.css' );
 			pb_backupbuddy::load_script( 'jquery-ui-tooltip', false );
 			pb_backupbuddy::load_style( 'jQuery-ui-1.11.2.css', true );
 			echo '<div class="wrap">';

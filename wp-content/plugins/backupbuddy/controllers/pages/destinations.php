@@ -4,7 +4,6 @@ if ( is_numeric( pb_backupbuddy::_GET( 'tab' ) ) ) {
 	$default_tab = pb_backupbuddy::_GET( 'tab' );
 }
 
-
 wp_enqueue_script( 'thickbox' );
 wp_print_scripts( 'thickbox' );
 wp_print_styles( 'thickbox' );
@@ -57,6 +56,18 @@ wp_print_styles( 'jquery-ui-progressbar' );
 	
 	jQuery(document).ready(function() {
 		
+		jQuery('#screen-meta-links').append(
+			'<div id="backupbuddy-meta-link-wrap" class="hide-if-no-js screen-meta-toggle">' +
+				'<a href="javascript:void(0)" class="show-settings" onClick="jQuery(\'.backupbuddy_api_key-hide\').slideToggle(); jQuery(this).toggleClass(\'screen-meta-active\'); return false; return false;"><?php _e( "Deployment Key", "it-l10n-backupbuddy" ); ?></a>' +
+			'</div>'
+		);
+		
+		jQuery('#screen-meta-links').append(
+			'<div id="backupbuddy-meta-link-wrap" class="hide-if-no-js screen-meta-toggle">' +
+				'<a href="javascript:void(0)" class="show-settings bb-toggle-meta" onClick="jQuery(\'.backupbuddy-destination-sends\').slideToggle(); jQuery(this).toggleClass(\'screen-meta-active\'); return false;"><?php _e( "Recently Sent Files", "it-l10n-backupbuddy" ); ?></a>' +
+			'</div>'
+		);
+
 		
 		jQuery( '.backupbuddy-progressbar' ).each( function(){
 			percentDone = jQuery(this).attr( 'data-percent' );
@@ -99,12 +110,9 @@ wp_print_styles( 'jquery-ui-progressbar' );
 </script>
 
 
-<?php
-$api_button = '';
-$api_button = '<a href="javascript:void(0)" class="add-new-h2" onClick="jQuery(\'.backupbuddy_api_key-hide\').toggle(); return false;">' . __( 'Show Deployment Key', 'it-l10n-backupbuddy' ) . '</a>';
-pb_backupbuddy::$ui->title( __( 'Remote Destinations', 'it-l10n-backupbuddy' ) . ' <a href="javascript:void(0)" class="add-new-h2" onClick="jQuery(\'.backupbuddy-destination-sends\').toggle()">View recently sent files</a> ' . $api_button ); //  . ' <a href="javascript:void(0)" class="add-new-h2">Add New</a>' )
-?>
+<?php pb_backupbuddy::$ui->title( __( 'Destinations', 'it-l10n-backupbuddy' ), true, false ); ?>
 
+<br>
 
 <div class="backupbuddy_api_key-hide" style="
 	display: none;
@@ -120,7 +128,7 @@ pb_backupbuddy::$ui->title( __( 'Remote Destinations', 'it-l10n-backupbuddy' ) .
 		require_once( pb_backupbuddy::plugin_path() . '/classes/remote_api.php' );
 		
 		if ( ( ! isset( pb_backupbuddy::$options['remote_api']['keys'][0] ) ) || ( '' == pb_backupbuddy::$options['remote_api']['keys'][0] ) ) {
-			pb_backupbuddy::alert( 'New Deployment Key generated.' );
+			//pb_backupbuddy::alert( 'New Deployment Key generated.' );
 			pb_backupbuddy::$options['remote_api']['keys'][0] = backupbuddy_remote_api::generate_key();
 			pb_backupbuddy::save();
 			
@@ -172,9 +180,14 @@ echo '</div>';
 echo '<div class="backupbuddy-destination-sends" style="display: none;"><br>';
 require_once( 'server_info/remote_sends.php' );
 echo '<br></div>';
+?>
 
+<div class="backupbuddy_destinations_iframe_load">
+	<img src="<?php echo pb_backupbuddy::plugin_url(); ?>/images/loading.gif" title="Loading... This may take a few seconds..." style="vertical-align: -3px; margin-left: 5px;"> <?php _e( 'Loading remote destinations...', 'it-l10n-backupbuddy' ); ?>
+</div>
 
-echo '<iframe id="pb_backupbuddy_iframe-dest-wrap" src="' . pb_backupbuddy::ajax_url( 'destinationTabs' ) . '&tab=' . $default_tab . '&action_verb=to%20manage%20files" width="100%" height="4000" frameBorder="0">Error #4584594579. Browser not compatible with iframes.</iframe>';
+<?php
+echo '<iframe id="pb_backupbuddy_iframe-dest-wrap" src="' . pb_backupbuddy::ajax_url( 'destinationTabs' ) . '&tab=' . $default_tab . '&action_verb=to%20manage%20files" width="100%" height="4000" frameBorder="0" onLoad="jQuery( \'.backupbuddy_destinations_iframe_load\' ).css(\'visibility\',\'hidden\');">Error #4584594579. Browser not compatible with iframes.</iframe>';
 
 
 ?>

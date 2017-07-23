@@ -317,7 +317,7 @@ class pb_backupbuddy_form {
 			
 		}
 		
-		$return = '<form method="post" action="' . $action_url . '" class="pb_form ' . $this->_prefix . $this->_form_name . '_form" id="' . $this->_prefix . $this->_form_name . '_form">';
+		$return = '<form method="post" action="' . $action_url . '" class="pb_form pb_form ' . $this->_prefix . $this->_form_name . '_form" id="' . $this->_prefix . $this->_form_name . '_form">';
 		$return .= '<input type="hidden" name="' . $this->_prefix . '" value="' . $this->_form_name . '">';
 		return $return;
 	} // End start().

@@ -183,9 +183,9 @@ $settings_form->add_setting( array(
 	'type'		=>		'checkbox',
 	'name'		=>		'show_admin_bar',
 	'options'	=>		array( 'unchecked' => '0', 'checked' => '1' ),
-	'title'		=>		__( 'Show admin bar', 'it-l10n-backupbuddy' ),
+	'title'		=>		__( 'Show admin bar stats', 'it-l10n-backupbuddy' ),
 	'tip'		=>		__( '[Default: enabled] - When enabled, a brief Live status will be added to the admin bar at the top of the WordPress dashboard for admins.', 'it-l10n-backupbuddy' ),
-	'after'		=>		'&nbsp;' . __( 'Yes, show stats in bar.' ),
+	'after'		=>		'&nbsp;' . __( 'Yes, show stats in bar. (Resource intensive on low I/O servers)' ),
 	'css'		=>		'',
 	'rules'		=>		'',
 	'row_class'	=>		'',
@@ -240,6 +240,7 @@ $settings_form->add_setting( array(
 	'type'		=>		'textarea',
 	'name'		=>		'postmeta_key_excludes',
 	'title'		=>		__( 'Additional Postmeta Key Exclusions', 'it-l10n-backupbuddy' ),
+	'tip'		=>		__( 'Excludes certain postmeta updates to the postmeta keys database (beyond hard-coded defaults) from being immediately backed up upon change and instead only backed up during the periodic (typically daily) database snapshot. This is useful for options which are updates very often. Supports regex using preg_match(), wrapped with forward slashes /. Ex: To exclude postmeta entries that look like someplugin_oranges, someplugin_apples, someplugin_bananas, etc use: /someplugin_.+/', 'it-l10n-backupbuddy' ),
 	'row_class'	=>		'advanced-toggle',
 	'css'		=>		'width: 100%;',
 ) );
@@ -248,7 +249,7 @@ $settings_form->add_setting( array(
 	'name'		=>		'options_excludes',
 	'title'		=>		__( 'Additional Options Exclusions', 'it-l10n-backupbuddy' ),
 	'row_class'	=>		'',
-	'tip'		=>		__( 'Excludes certain options updates to the wp_options table (beyond hard-coded defaults) from being immediately backed up upon change and instead only backed up during the periodic (typically daily) database snapshot. This is useful for options which are updates very often. Supports regular expressions via preg_match().' ),
+	'tip'		=>		__( 'Excludes certain options updates to the wp_options table (beyond hard-coded defaults) from being immediately backed up upon change and instead only backed up during the periodic (typically daily) database snapshot. This is useful for options which are updates very often. Supports regex using preg_match(), wrapped with forward slashes /. Ex: To exclude options that look like someplugin_oranges, someplugin_apples, someplugin_bananas, etc use: /someplugin_.+/', 'it-l10n-backupbuddy' ),
 	'row_class'	=>		'advanced-toggle',
 	'css'		=>		'width: 100%;',
 ) );

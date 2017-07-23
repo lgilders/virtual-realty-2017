@@ -24,7 +24,6 @@ foreach( $tables as $table_name => $table ) {
 	}
 	$tables_list[] = array(
 		$table_name,
-		pb_backupbuddy::$format->date( pb_backupbuddy::$format->localize_time( $table['a'] ) ) . '<br><span class="description">(' . pb_backupbuddy::$format->time_ago( $table['a'] ) . ' ago)</span>',
 		pb_backupbuddy::$format->date( pb_backupbuddy::$format->localize_time( $table['m'] ) ) . '<br><span class="description">(' . pb_backupbuddy::$format->time_ago( $table['m'] ) . ' ago)</span>',
 		$sent,
 		pb_backupbuddy::$format->file_size( $table['s'] ),
@@ -39,7 +38,6 @@ pb_backupbuddy::$ui->list_table(
 		'action'		=>	pb_backupbuddy::page_url(),
 		'columns'		=>	array(
 								__( 'Database Tables', 'it-l10n-backupbuddy' ) . ' <img src="' . pb_backupbuddy::plugin_url() . '/images/sort_down.png" style="vertical-align: 0px;" title="Sorted alphabetically">',
-								__( 'Added', 'it-l10n-backupbuddy' ),
 								__( 'Modified', 'it-l10n-backupbuddy' ),
 								__( 'Transferred', 'it-l10n-backupbuddy' ),
 								__( 'Size', 'it-l10n-backupbuddy' ),

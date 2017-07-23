@@ -4,7 +4,6 @@ if ( !current_user_can( pb_backupbuddy::$options['role_access'] ) ) {
 }
 
 pb_backupbuddy::load_script( 'jquery.leanModal.min.js' );
-pb_backupbuddy::load_style( 'admin.css' );
 
 pb_backupbuddy::load_script( 'filetree.js' );
 pb_backupbuddy::load_style( 'filetree.css' );
@@ -20,7 +19,7 @@ $file = str_replace( '/', '', $file );
 $serial = backupbuddy_core::get_serial_from_file( $file );
 
 
-pb_backupbuddy::disalert( 'restore_caution', __( 'Caution: Restored files may overwrite existing files of the same name.  Use caution when restoring, especially when restoring large numbers of files to avoid breaking the site.', 'it-l10n-backupbuddy' ) );
+pb_backupbuddy::disalert( 'restore_caution', __( 'Caution: Files will be restored relative to the site WordPress installation directory, NOT necessarily their original location. Restored files may overwrite existing files of the same name.  Use caution when restoring, especially when restoring large numbers of files to avoid breaking the site.', 'it-l10n-backupbuddy' ) );
 ?>
 
 <script type="text/javascript">

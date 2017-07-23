@@ -94,8 +94,9 @@ if ( pb_backupbuddy::_POST( 'ajax' ) != '' ) {
 	$ajax = pb_backupbuddy::_GET( 'ajax' );
 }
 if ( $ajax != '' ) { // AJAX
-	
-	Auth::require_authentication(); // Die if not logged in.
+	if ( $ajax != 'hash_forgotpass' ) {
+		Auth::require_authentication(); // Die if not logged in.
+	}
 	
 	$page = ABSPATH . 'importbuddy/controllers/ajax/' . $ajax . '.php';
 	if ( file_exists( $page ) ) {

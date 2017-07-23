@@ -22,6 +22,8 @@ class pb_backupbuddy_destination_gdrive {
 		'tokens'				=> '',			// Empty string if not yet authed. base64 encoded json string of tokens once authed. Google stores tokens in a json encoded string.
 		'folderID'				=> '',
 		'folderTitle'			=> '', // Friend title of the folder at the time of creation.
+		'service_account_file'	=>	'',		// If specified then load this file as a Gooel Service Account instead of normal api key pair. See https://developers.google.com/api-client-library/php/auth/service-accounts
+		'service_account_email'	=>	'',		// Account ID/name
 		
 		'db_archive_limit'		=> '10',		// Maximum number of db backups for this site in this directory for this account. No limit if zero 0.
 		'full_archive_limit' 	=> '4',		// Maximum number of full backups for this site in this directory for this account. No limit if zero 0.
@@ -108,57 +110,82 @@ class pb_backupbuddy_destination_gdrive {
 		require_once( pb_backupbuddy::plugin_path() . '/destinations/gdrive/Google/Http/MediaFileUpload.php' );
 		require_once( pb_backupbuddy::plugin_path() . '/destinations/gdrive/Google/Service/Drive.php' );
 		
-		$client_id = $settings['client_id'];
-		$client_secret = $settings['client_secret'];
-		$redirect_uri = 'urn:ietf:wg:oauth:2.0:oob';
-		$disable_gzip = $settings['disable_gzip'];
+		//$settings['service_account_file'] = '/Users/dustin/Sites/backupbuddy/BackupBuddy-949ad159c32e.p12';
+		//$settings['service_account_email'] = 'backupbuddyp12-2@bold-mantis-677.iam.gserviceaccount.com';
+		
 		
 		pb_backupbuddy::status( 'details', 'Connecting to Google Drive.' );
 		self::$_client = new Google_Client();
-		self::$_client->setClientId($client_id);
-		self::$_client->setClientSecret($client_secret);
-		self::$_client->setRedirectUri($redirect_uri);
+		self::$_client->setApplicationName( 'BackupBuddy v' + pb_backupbuddy::settings( 'version' ) );
+		self::$_client->addScope('https://www.googleapis.com/auth/drive');
+		$disable_gzip = $settings['disable_gzip'];
 		self::$_client->setClassConfig('Google_Http_Request', 'disable_gzip', $disable_gzip);
 		self::$_client->setAccessType('offline'); // Required so that Google will use the refresh token.
-		self::$_client->addScope("https://www.googleapis.com/auth/drive");
+		
+		if ( '' != $settings['service_account_file'] ) { // Service account.
+			
+			if ( false === ( $account_file = @file_get_contents( $settings['service_account_file'] ) ) ) {
+				$message = 'Error #4430439433: Unable to read/access p12 service account file `' . $settings['service_account_file'] . '`.';
+				pb_backupbuddy::status( 'error', $message );
+				global $bb_gdrive_error;
+				$bb_gdrive_error = $message;
+				return false;
+			}
+			/*
+			if ( '' != $settings['tokens'] ) {
+				self::$_client->setAccessToken( $settings['tokens'] );
+			}*/
+			
+			$cred = new Google_Auth_AssertionCredentials(
+				$settings['service_account_email'], // service account name
+				array('https://www.googleapis.com/auth/drive'),
+				$account_file
+			);
+			self::$_client->setAssertionCredentials($cred);
+			if ( self::$_client->getAuth()->isAccessTokenExpired() ) {
+				try {
+					self::$_client->getAuth()->refreshTokenWithAssertion($cred);
+				} catch (Exception $e) {
+					$message = 'Error #4349898343843: Unable to set/refresh access token. Access token error details: `' . $e->getMessage() . '`.';
+					pb_backupbuddy::status( 'error', $message );
+					pb_backupbuddy::status( 'error', 'Error #83983448947:  Tokens: `' . str_replace( "\t", ';', print_r( $settings['tokens'], true ) ) . '`.' );
+					global $bb_gdrive_error;
+					$bb_gdrive_error = $message;
+					return false;
+				}
+			}
+			
+			$settings['tokens'] = self::$_client->getAccessToken();
+			
+		} else { // Normal account authentication.
+			
+			$client_id = $settings['client_id'];
+			$client_secret = $settings['client_secret'];
+			$redirect_uri = 'urn:ietf:wg:oauth:2.0:oob';
+			
+			// Apply credentials.
+			self::$_client->setClientId($client_id);
+			self::$_client->setClientSecret($client_secret);
+			self::$_client->setRedirectUri($redirect_uri);
+			
+			pb_backupbuddy::status( 'details', 'Setting Google Drive Access Token.' );
+			try {
+				pb_backupbuddy::status( 'details', 'TOKENS: ' . print_r( $settings['tokens'], true ) );
+				self::$_client->setAccessToken( $settings['tokens'] );
+			} catch (Exception $e) {
+				$message = 'Error #4839484984: Unable to set access token. Access token error details: `' . $e->getMessage() . '`.';
+				pb_backupbuddy::status( 'error', $message );
+				pb_backupbuddy::status( 'error', 'Error #8378327:  Tokens: `' . str_replace( "\t", ';', print_r( $settings['tokens'], true ) ) . '`.' );
+				global $bb_gdrive_error;
+				$bb_gdrive_error = $message;
+				return false;
+			}
+			
+			$newAccessToken = self::$_client->getAccessToken();
+			$settings['tokens'] = $newAccessToken;
+		}
+		
 		self::$_drive = new Google_Service_Drive( self::$_client );
-		
-		pb_backupbuddy::status( 'details', 'Setting Google Drive Access Token.' );
-		try {
-			pb_backupbuddy::status( 'details', 'TOKENS: ' . print_r( $settings['tokens'], true ) );
-			self::$_client->setAccessToken( $settings['tokens'] );
-		} catch (Exception $e) {
-			pb_backupbuddy::status( 'error', 'Error #4839484984: Unable to set access token. Access token error details: `' . $e->getMessage() . '`.' );
-			pb_backupbuddy::status( 'error', 'Error #8378327:  Tokens: `' . str_replace( "\t", ';', print_r( $settings['tokens'], true ) ) . '`.' );
-			//error_log( 'Message: ' . $e->getMessage() );
-			//error_log( 'Tokens: ' . print_r( $settings['tokens'], true ) );
-			return false;
-		}
-		
-		/*
-		try {
-			$result = self::$_client->authenticate(); //  $auth_code 
-		} catch (Exception $e) {
-			pb_backupbuddy::alert( 'Error Authenticating: ' . $e->getMessage() . ' Please go back, check codes, and try again.' );
-			return false;
-		}
-		*/
-		
-		// Update tokens in settings.
-		//$oldAccessTokens = json_decode( $settings['tokens']['refreshToken'], true );
-		$newAccessToken = self::$_client->getAccessToken();
-		//print_r( $newAccessToken );
-		
-		/*
-		$accessTokens = json_decode( $newAccessToken, true );
-		$accessTokens['refreshToken'] = $oldAccessTokens['refreshToken'];
-		$settings['tokens'] = json_encode( $settings['tokens'] ); // Re-encode in JSON
-		
-		
-		self::$_client->setAccessToken( $settings['tokens'] );
-		*/
-		
-		$settings['tokens'] = $newAccessToken;
 		
 		self::$_isConnectedClientID = $settings['client_id'];
 		return $settings;
@@ -472,19 +499,19 @@ class pb_backupbuddy_destination_gdrive {
 			
 		} // end foreach.
 		
-		
-		$db_archive_limit = $settings['db_archive_limit'];
-		$full_archive_limit = $settings['full_archive_limit'];
-		$files_archive_limit = $settings['files_archive_limit'];
-		
-		
 		// BEGIN FILE LIMIT PROCESSING. Enforce archive limits if applicable.
 		if ( $backup_type == 'full' ) {
-			$limit = $full_archive_limit;
+			$limit = $settings['full_archive_limit'];
 		} elseif ( $backup_type == 'db' ) {
-			$limit = $db_archive_limit;
+			$limit = $settings['db_archive_limit'];
 		} elseif ( $backup_type == 'files' ) {
-			$limit = $files_archive_limit;
+			$limit = $settings['files_archive_limit'];
+		} elseif ( $backup_type == 'themes' ) {
+			$limit = $settings['themes_archive_limit'];
+		} elseif ( $backup_type == 'plugins' ) {
+			$limit = $settings['plugins_archive_limit'];
+		} elseif ( $backup_type == 'media' ) {
+			$limit = $settings['media_archive_limit'];
 		} else {
 			$limit = 0;
 			pb_backupbuddy::status( 'warning', 'Warning #34352453244. Google Drive was unable to determine backup type (reported: `' . $backup_type . '`) so archive limits NOT enforced for this backup.' );
@@ -721,7 +748,7 @@ class pb_backupbuddy_destination_gdrive {
 	public static function getFileMeta( $settings, $fileID ) {
 		$settings = self::_normalizeSettings( $settings );
 		if ( false === ( $settings = self::_connect( $settings ) ) ) {
-			$error = 'Error #3839483: Unable to connect with Google Drive. See log for details.';
+			$error = 'Error #3839483a: Unable to connect with Google Drive. See log for details.';
 			echo $error;
 			pb_backupbuddy::status( 'error', $error );
 			return false;
@@ -762,7 +789,7 @@ class pb_backupbuddy_destination_gdrive {
 		pb_backupbuddy::status( 'details', 'About to get Google Drive File with ID `' . $fileID . '` to store in `' . $destinationFile . '`.' );
 		$settings = self::_normalizeSettings( $settings );
 		if ( false === ( $settings = self::_connect( $settings ) ) ) {
-			$error = 'Error #3839483: Unable to connect with Google Drive. See log for details.';
+			$error = 'Error #3839483b: Unable to connect with Google Drive. See log for details.';
 			echo $error;
 			pb_backupbuddy::status( 'error', $error );
 			return false;
@@ -850,7 +877,8 @@ class pb_backupbuddy_destination_gdrive {
 		
 		$settings = self::_normalizeSettings( $settings );
 		if ( false === ( $settings = self::_connect( $settings ) ) ) {
-			$error = 'Error #2378327: Unable to connect with Google Drive. See log for details.';
+			global $bb_gdrive_error;
+			$error = 'Error #2378327: Unable to connect with Google Drive. See log for details. Details: `' . $bb_gdrive_error . '`.';
 			echo $error;
 			pb_backupbuddy::status( 'error', $error );
 			return false;
@@ -933,8 +961,10 @@ class pb_backupbuddy_destination_gdrive {
 				clientID = destinationWrap.find( '#pb_backupbuddy_client_id' ).val();
 				clientSecret = destinationWrap.find( '#pb_backupbuddy_client_secret' ).val();
 				tokens = destinationWrap.find( '#pb_backupbuddy_tokens' ).val();
+				service_account_email = destinationWrap.find( '#pb_backupbuddy_service_account_email' ).val();
+				service_account_file = destinationWrap.find( '#pb_backupbuddy_service_account_file' ).val();
 				
-				jQuery.post( '<?php echo pb_backupbuddy::ajax_url( 'gdrive_folder_select' ); ?>', { clientID: clientID, clientSecret: clientSecret, disable_gzip: backupbuddy_gdrive_disable_gzip, tokens: tokens, parentID: loadParentID },  backupbuddy_gdrive_folderSelect_ajaxResponse( destinationID, loadParentID, loadParentTitle, command ) );
+				jQuery.post( '<?php echo pb_backupbuddy::ajax_url( 'gdrive_folder_select' ); ?>', { service_account_email: service_account_email, service_account_file: service_account_file, clientID: clientID, clientSecret: clientSecret, disable_gzip: backupbuddy_gdrive_disable_gzip, tokens: tokens, parentID: loadParentID },  backupbuddy_gdrive_folderSelect_ajaxResponse( destinationID, loadParentID, loadParentTitle, command ) );
 			}
 			
 			
@@ -1057,7 +1087,7 @@ class pb_backupbuddy_destination_gdrive {
 					}
 					
 					jQuery( '.pb_backupbuddy_loading' ).show();
-					jQuery.post( '<?php echo pb_backupbuddy::ajax_url( 'gdrive_folder_create' ); ?>', { clientID: destinationWrap.find( '#pb_backupbuddy_client_id' ).val(), clientSecret: destinationWrap.find( '#pb_backupbuddy_client_secret' ).val(), tokens: destinationWrap.find( '#pb_backupbuddy_tokens' ).val(), parentID: currentFolderID, folderName: newFolderName }, 
+					jQuery.post( '<?php echo pb_backupbuddy::ajax_url( 'gdrive_folder_create' ); ?>', { service_account_email: destinationWrap.find( '#pb_backupbuddy_service_account_email' ).val(), service_account_file: destinationWrap.find( '#pb_backupbuddy_service_account_file' ).val(), clientID: destinationWrap.find( '#pb_backupbuddy_client_id' ).val(), clientSecret: destinationWrap.find( '#pb_backupbuddy_client_secret' ).val(), tokens: destinationWrap.find( '#pb_backupbuddy_tokens' ).val(), parentID: currentFolderID, folderName: newFolderName }, 
 						function(data) {
 							destinationWrap.find( '.pb_backupbuddy_loading' ).hide();
 							data = jQuery.trim( data );

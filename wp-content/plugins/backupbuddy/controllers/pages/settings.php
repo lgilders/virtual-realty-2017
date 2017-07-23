@@ -12,14 +12,7 @@
 }
 </style>
 <script type="text/javascript">
-	jQuery(document).ready( function() {
-		jQuery('#screen-meta-links').append(
-			'<div id="backupbuddy-meta-link-wrap" class="hide-if-no-js screen-meta-toggle">' +
-				'<a href="" class="show-settings pb_backupbuddy_begintour"><?php _e( "Tour Page", "it-l10n-backupbuddy" ); ?></a>' +
-			'</div>'
-		);
-		
-		
+	jQuery(document).ready( function() {		
 		jQuery( '.bb-tab-other' ).click( function(){
 			jQuery.post( '<?php echo pb_backupbuddy::ajax_url( 'getMainLog' ); ?>', { }, 
 				function(data) {
@@ -36,35 +29,13 @@
 	}); // end on ready.
 	
 </script>
-<?php
-// Tutorial
-pb_backupbuddy::load_script( 'jquery.joyride-2.0.3.js' );
-pb_backupbuddy::load_script( 'modernizr.mq.js' );
-pb_backupbuddy::load_style( 'joyride.css' );
-?>
-<ol id="pb_backupbuddy_tour" style="display: none;">
-	<li data-id="ui-id-1">These settings are your defaults for all backups. Profiles may be used to override many settings to customize various backups to your needs.</li>
-	<li data-id="ui-id-2">Use profiles to customize various settings on a case-by-case basis and override default backup settings.</li>
-	<li data-id="ui-id-3">Customize advanced options or troubleshoot issues by overriding functionality or changing default operation.</li>
-	<li data-class="jQueryOuterTree">Database tables may be omitted from backups by hovering over a table in the list and clicking the (-) minus symbol.</li>
-	<li data-id="exlude_dirs" data-button="Finish">Directories & files may be omitted from backups by hovering over an item in the list and clicking the (-) minus symbol.</li>
-</ol>
-<script>
-jQuery(window).load(function() {
-	jQuery(document).on( 'click', '.pb_backupbuddy_begintour', function(e) {
-		jQuery("#pb_backupbuddy_tour").joyride({
-			tipLocation: 'top',
-		});
-		return false;
-	});
-});
-</script>
+
 
 <?php
 pb_backupbuddy::$ui->title( __( 'Settings', 'it-l10n-backupbuddy' ) );
 backupbuddy_core::versions_confirm();
 
-pb_backupbuddy::disalert( 'profile_suggest', '<span class="pb_label" style="font-size: 12px; margin-left: 10px; position: relative;">Tip</span> &nbsp; You can create & customize multiple different backup types with profiles on the <a href="?page=pb_backupbuddy_backup">Backups</a> page by selecting the gear icon next to each profile.' );
+//pb_backupbuddy::disalert( 'profile_suggest', '<span class="pb_label" style="font-size: 12px; margin-left: 10px; position: relative;">Tip</span> &nbsp; You can create & customize multiple different backup types with profiles on the <a href="?page=pb_backupbuddy_backup">Backups</a> page by selecting the gear icon next to each profile.' );
 
 $data = array(); // To pass to view.
 
@@ -207,7 +178,7 @@ if ( isset( $_POST['pb_backupbuddy_importbuddy_pass_hash'] ) && ( '' == $_POST['
 	pb_backupbuddy::$options['importbuddy_pass_length'] = 0;
 	pb_backupbuddy::$options['importbuddy_pass_hash'] = ''; // Clear out hash when emptying.
 }
-if ( ( str_replace( ')', '', pb_backupbuddy::_POST( 'pb_backupbuddy_importbuddy_pass_hash' ) ) != '' ) && ( md5( pb_backupbuddy::_POST( 'pb_backupbuddy_importbuddy_pass_hash' ) ) != pb_backupbuddy::$options['importbuddy_pass_hash'] ) ) {
+if ( ( str_replace( '_', '', pb_backupbuddy::_POST( 'pb_backupbuddy_importbuddy_pass_hash' ) ) != '' ) && ( md5( pb_backupbuddy::_POST( 'pb_backupbuddy_importbuddy_pass_hash' ) ) != pb_backupbuddy::$options['importbuddy_pass_hash'] ) ) {
 	pb_backupbuddy::$options['importbuddy_pass_length'] = strlen( pb_backupbuddy::_POST( 'pb_backupbuddy_importbuddy_pass_hash' ) );
 	$_POST['pb_backupbuddy_importbuddy_pass_hash'] = md5( pb_backupbuddy::_POST( 'pb_backupbuddy_importbuddy_pass_hash' ) );
 	$_POST['pb_backupbuddy_importbuddy_pass_hash_confirm'] = '';
@@ -218,7 +189,7 @@ if ( ( str_replace( ')', '', pb_backupbuddy::_POST( 'pb_backupbuddy_importbuddy_
 	}
 }
 // Set importbuddy dummy text to display in form box. Equal length to the provided password.
-$data['importbuddy_pass_dummy_text'] = str_pad( '', pb_backupbuddy::$options['importbuddy_pass_length'], ')' );
+$data['importbuddy_pass_dummy_text'] = str_pad( '', pb_backupbuddy::$options['importbuddy_pass_length'], '_' );
 $_POST['pb_backupbuddy_importbuddy_pass_hash_confirm'] = ''; // Always clear confirmation after processing it.
 
 

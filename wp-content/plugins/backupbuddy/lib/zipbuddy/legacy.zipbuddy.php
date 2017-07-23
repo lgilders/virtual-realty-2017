@@ -722,7 +722,7 @@ if ( !class_exists( "pluginbuddy_zipbuddy" ) ) {
 								
 				// Handle exclusions by placing them in an exclusion text file.
 				$exclusion_file = $temporary_zip_directory . 'exclusions.txt';
-				$this->_render_exclusions_file( $exclusion_file, $excludes );
+				$this->_render_exclusions_file( $exclusion_file, $excludes, $add_directory );
 				pb_backupbuddy::status( 'details', 'Using exclusion file `' . $exclusion_file . '`.' );
 				$command .= ' -x@' . "'{$exclusion_file}'";
 				
@@ -1420,10 +1420,16 @@ if ( !class_exists( "pluginbuddy_zipbuddy" ) ) {
 		 *	
 		 *	@param		string		$file			File to write exclusions into.
 		 *	@param		array		$exclusions		Array of directories/paths to exclude. One per line.
+		 *	@param		atring		$root			Root directory to exclude relative to.
 		 *	@return		null
 		 */
-		public function _render_exclusions_file( $file, $exclusions ) {
-		
+		public function _render_exclusions_file( $file, $exclusions, $root = '' ) {
+			if ( '' == $root ) {
+				$root = ABSPATH;
+			} else {
+				$root = rtrim( $root, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR;
+			}
+
 			// Array for cleaned up exclusions list
 			$sanitized_exclusions = array();
 			
@@ -1437,7 +1443,7 @@ if ( !class_exists( "pluginbuddy_zipbuddy" ) ) {
 				$exclusion = preg_replace( '|[' . addslashes( self::DIRECTORY_SEPARATORS ) . ']+|', DIRECTORY_SEPARATOR, $exclusion );
 				
 				// DIRECTORY.
-				if ( is_dir( ABSPATH . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
+				if ( is_dir( $root . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
 					
 					pb_backupbuddy::status( 'details', 'Excluding directory `' . $exclusion . '`.' );
 					
@@ -1445,12 +1451,12 @@ if ( !class_exists( "pluginbuddy_zipbuddy" ) ) {
 					$exclusion = rtrim( $exclusion, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . '*';
 				
 				// FILE.
-				} elseif ( is_file( ABSPATH . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
+				} elseif ( is_file( $root . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
 					
 					pb_backupbuddy::status( 'details', 'Excluding file `' . $exclusion . '`.' );
 				
 				// SYMBOLIC LINK.
-				} elseif ( is_link( ABSPATH . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
+				} elseif ( is_link( $root . ltrim( $exclusion, DIRECTORY_SEPARATOR ) ) ) {
 					
 					pb_backupbuddy::status( 'details', 'Excluding symbolic link `' . $exclusion . '`.' );
 				

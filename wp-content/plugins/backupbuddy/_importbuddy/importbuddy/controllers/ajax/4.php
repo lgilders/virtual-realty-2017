@@ -15,15 +15,31 @@ global $wpdb;
 if ( 'true' != pb_backupbuddy::_GET( 'deploy' ) ) { // deployment mode pre-loads state data in a file instead of passing via post.
 	// Parse submitted restoreData restore state from previous step.
 	$restoreData = pb_backupbuddy::_POST( 'restoreData' );
-	if ( NULL === ( $restoreData = json_decode( urldecode( base64_decode( $restoreData ) ), true ) ) ) { // All the encoding/decoding due to UTF8 getting mucked up along the way without all these layers. Blech!
-		$message = 'ERROR #83893a: unable to decode JSON restore data `' . htmlentities( $restoreData ) . '`. Restore halted.';
-		if ( function_exists( 'json_last_error' ) ) {
-	 		$message .= ' json_last_error: `' . json_last_error() . '`.';
-	 	}
+	
+	
+	// Decode submitted data, reporting details on failure.
+	$decodeFailReason = '';
+	if ( false === ( $restoreData = base64_decode( $restoreData ) ) ) { // false if failed
+		$decodeFailReason = 'ERROR #83893b: Restore halted. Unable to base64_decode() submitted form data `' . htmlentities( pb_backupbuddy::_POST( 'restoreData' ) ) . '`.';
+	} else { // Success.
+		$restoreData = urldecode( $restoreData );
+		if ( null === ( $restoreData = json_decode( $restoreData, true ) ) ) { // null if failed
+			$message = 'ERROR #83893a: Restore halted. Unable to decode JSON restore base64 decoded data `' . htmlentities( base64_decode( pb_backupbuddy::_POST( 'restoreData' ) ) ) . '`. Before base64 decode: `' . htmlentities( pb_backupbuddy::_POST( 'restoreData' ) ) . '`. (Note: A customer has reported running out of disk space as a possible cause. This is not confirmed but could be useful to check.)';
+			if ( function_exists( 'json_last_error' ) ) {
+		 		$message .= ' json_last_error: `' . json_last_error() . '`.';
+		 	}
+		 	$decodeFailReason = $message;
+		} else { // Success.
+			pb_backupbuddy::status( 'details', 'Success decoding submitted encoded data.' );
+		}
+	}
+	// Report failure and fatally halt.
+	if ( '' !== $decodeFailReason ) {
 		pb_backupbuddy::alert( $message );
 		pb_backupbuddy::status( 'error', $message );
 		die();
 	}
+	
 	
 } else {
 	if ( isset( pb_backupbuddy::$options['default_state_overrides'] ) && ( count( pb_backupbuddy::$options['default_state_overrides'] ) > 0 ) ) { // Default state overrides exist. Apply them.
@@ -45,6 +61,7 @@ if ( false === $restore->_state['restoreDatabase'] ) {
 	pb_backupbuddy::status( 'details', 'Database restore SKIPPED based on Step 1 settings.' );
 	echo "<script>bb_action( 'databaseRestoreSkipped' );</script>";
 } else {
+	pb_backupbuddy::status( 'details', 'Connecting to database.' );
 	
 	// Connect ImportBuddy to the database with these settings.
 	$restore->connectDatabase();
@@ -91,7 +108,6 @@ if ( false === $restore->_state['restoreDatabase'] ) {
 	
 	
 	pb_backupbuddy::status( 'details', 'About to restore database.' );
-	
 	
 	$restoreResult = $restore->restoreDatabase( $restore->_state['databaseSettings']['tempPrefix'] );
 	

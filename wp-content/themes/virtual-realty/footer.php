@@ -15,9 +15,32 @@
 
 	<footer id="colophon" class="site-footer" role="contentinfo">
 		<div class="site-info">
-			<a href="<?php echo esc_url( __( 'https://wordpress.org/', 'virtual-realty' ) ); ?>"><?php printf( esc_html__( 'Proudly powered by %s', 'virtual-realty' ), 'WordPress' ); ?></a>
-			<span class="sep"> | </span>
-			<?php printf( esc_html__( 'Theme: %1$s by %2$s.', 'virtual-realty' ), 'virtual-realty', '<a href="https://automattic.com/" rel="designer">Underscores.me</a>' ); ?>
+            <?php
+                $phoneNumber = get_field('phone_number', 'option');
+                $emailAddress = get_field('e-mail_address', 'option');
+            ?>
+
+            <div id="phoneNumber">
+                <a href="tel:1-" + <?php echo $phoneNumber;?> >
+                    <?php the_field('phone_number', 'option'); ?>
+                </a>
+            </div>
+
+            <div id="emailAddress">
+                <a href="mailto:" + <?php echo $emailAddress;?> >
+                    <?php the_field('e-mail_address', 'option'); ?>
+                </a>
+            </div>
+
+            <div id="facebook">
+                <a href="https://www.facebook.com/VirtualRealtyLLC">
+                    <?php the_field('facebook_cta', 'option'); ?>
+                </a>
+            </div>
+
+            <div id="copyright">
+                <?php the_field('copyright', 'option'); ?>
+            </div>
 		</div><!-- .site-info -->
 	</footer><!-- #colophon -->
 </div><!-- #page -->

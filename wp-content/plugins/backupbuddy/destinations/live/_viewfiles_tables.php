@@ -11,7 +11,7 @@ pb_backupbuddy::verify_nonce();
 // @author Dustin Bolton 2015.
 // Incoming variables: $destination, $destination_id
 if ( isset( $destination['disabled'] ) && ( '1' == $destination['disabled'] ) ) {
-	die( __( 'This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.', 'it-l10n-backupbuddy' ) );
+	die( __( '<span class="description">This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.</span>', 'it-l10n-backupbuddy' ) );
 }
 
 

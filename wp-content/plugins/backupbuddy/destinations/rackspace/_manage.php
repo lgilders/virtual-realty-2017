@@ -1,6 +1,6 @@
 <?php
 if ( isset( $destination['disabled'] ) && ( '1' == $destination['disabled'] ) ) {
-	die( __( 'This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.', 'it-l10n-backupbuddy' ) );
+	die( __( '<span class="description">This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.</span>', 'it-l10n-backupbuddy' ) );
 }
 
 //pb_backupbuddy::$ui->title( 'Rackspace Cloudfiles' );
@@ -11,6 +11,12 @@ if ( isset( $destination['disabled'] ) && ( '1' == $destination['disabled'] ) ) 
 	$rs_api_key = $destination['api_key'];
 	$rs_container = $destination['container'];
 	$rs_server = $destination['server'];
+	
+	$directory = '';
+	if ( isset( $settings['directory'] ) && ( '' != $settings['directory'] ) ) {
+		$directory = trim( $settings['directory'], '\\/' ) . '/'; // Trailing slash. No leading slash.
+	}
+	
 	/*
 	if ( isset( $destination['server'] ) ) {
 		$rs_server = $destination['server'];
@@ -39,7 +45,7 @@ if ( isset( $destination['disabled'] ) && ( '1' == $destination['disabled'] ) ) 
 		pb_backupbuddy::verify_nonce();
 		
 		$delete_count = 0;
-		if ( !empty( $_POST['files'] ) && is_array( $_POST['files'] ) ) {	
+		if ( !empty( $_POST['files'] ) && is_array( $_POST['files'] ) ) {
 			// loop through and delete Rackspace files
 			foreach ( $_POST['files'] as $rsfile ) {
 				$delete_count++;
@@ -71,13 +77,13 @@ if ( isset( $destination['disabled'] ) && ( '1' == $destination['disabled'] ) ) 
 		$results = $container->get_objects( 0, NULL, 'backup-', $rs_path );
 	} else {
 	*/
-		$results = $container->get_objects( 0, NULL, 'backup-');
+		$results = $container->get_objects( 0, NULL, $directory . 'backup-');
 	/* } */
 
 
 $urlPrefix = pb_backupbuddy::ajax_url( 'remoteClient' ) . '&destination_id=' . htmlentities( pb_backupbuddy::_GET( 'destination_id' ) );
 ?>
-<div style="max-width: 950px;">
+<div>
 	<form id="posts-filter" enctype="multipart/form-data" method="post" action="<?php echo $urlPrefix; ?>">
 		<div class="tablenav">
 			<div class="alignleft actions">

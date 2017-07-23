@@ -10,18 +10,36 @@ echo "<script>bb_showStep( 'cleanupSettings' );</script>";
 pb_backupbuddy::flush();
 
 
+
 if ( 'true' != pb_backupbuddy::_GET( 'deploy' ) ) { // deployment mode pre-loads state data in a file instead of passing via post.
 	// Parse submitted restoreData restore state from previous step.
 	$restoreData = pb_backupbuddy::_POST( 'restoreData' );
-	if ( NULL === ( $restoreData = json_decode( urldecode( base64_decode( $restoreData ) ), true ) ) ) { // All the encoding/decoding due to UTF8 getting mucked up along the way without all these layers. Blech!
-		$message = 'ERROR #83893c: unable to decode JSON restore data `' . htmlentities( $restoreData ) . '`. Restore halted.';
-		if ( function_exists( 'json_last_error' ) ) {
-	 		$message .= ' json_last_error: `' . json_last_error() . '`.';
-	 	}
+	
+	
+	// Decode submitted data, reporting details on failure.
+	$decodeFailReason = '';
+	if ( false === ( $restoreData = base64_decode( $restoreData ) ) ) { // false if failed
+		$decodeFailReason = 'ERROR #83893b: Restore halted. Unable to base64_decode() submitted form data `' . htmlentities( pb_backupbuddy::_POST( 'restoreData' ) ) . '`.';
+	} else { // Success.
+		$restoreData = urldecode( $restoreData );
+		if ( null === ( $restoreData = json_decode( $restoreData, true ) ) ) { // null if failed
+			$message = 'ERROR #83893c: Restore halted. Unable to decode JSON restore base64 decoded data `' . htmlentities( base64_decode( pb_backupbuddy::_POST( 'restoreData' ) ) ) . '`. Before base64 decode: `' . htmlentities( pb_backupbuddy::_POST( 'restoreData' ) ) . '`.';
+			if ( function_exists( 'json_last_error' ) ) {
+		 		$message .= ' json_last_error: `' . json_last_error() . '`.';
+		 	}
+		 	$decodeFailReason = $message;
+		} else { // Success.
+			pb_backupbuddy::status( 'details', 'Success decoding submitted encoded data.' );
+		}
+	}
+	// Report failure and fatally halt.
+	if ( '' !== $decodeFailReason ) {
 		pb_backupbuddy::alert( $message );
 		pb_backupbuddy::status( 'error', $message );
 		die();
 	}
+	
+	
 } else {
 	if ( isset( pb_backupbuddy::$options['default_state_overrides'] ) && ( count( pb_backupbuddy::$options['default_state_overrides'] ) > 0 ) ) { // Default state overrides exist. Apply them.
 		$restoreData = pb_backupbuddy::$options['default_state_overrides'];
@@ -36,6 +54,7 @@ if ( 'true' != pb_backupbuddy::_GET( 'deploy' ) ) { // deployment mode pre-loads
 	}
 }
 
+
 // Instantiate restore class.
 require_once( pb_backupbuddy::plugin_path() . '/classes/restore.php' );
 $restore = new backupbuddy_restore( 'restore', $restoreData );
@@ -45,7 +64,6 @@ if ( 'true' != pb_backupbuddy::_GET( 'deploy' ) ) { // We dont accept submitted 
 } else { // Deployment should sleep to help give time for the source site to grab the last status log.
 	sleep( 5 );
 }
-
 
 $footer = file_get_contents( pb_backupbuddy::$_plugin_path . '/views/_iframe_footer.php' );
 
@@ -70,7 +88,7 @@ while( $t < $stop_time_limit ) {
 
 
 
-cleanup( $restore->_state );
+cleanup( $restore->_state, $restore );
 
 echo $footer; // We must preload the footer file contents since we are about to delete it.
 
@@ -109,6 +127,15 @@ function parse_options( $restoreData ) {
 		$restoreData['cleanup']['deleteImportLog'] = false;
 	}
 	
+	// Search engine visibility (set_blog_public wp_options).
+	if ( '1' == pb_backupbuddy::_POST( 'set_blog_public' ) ) {
+		$restoreData['cleanup']['set_blog_public'] = true;
+		error_log('999yes' );
+	} elseif ( '0' == pb_backupbuddy::_POST( 'set_blog_public' ) ) {
+		$restoreData['cleanup']['set_blog_public'] = false;
+		error_log('999nope' );
+	}
+	
 	return $restoreData;
 }
 
@@ -120,8 +147,15 @@ function parse_options( $restoreData ) {
  *	
  *	@return		null
  */
-function cleanup( $restoreData ) {
+function cleanup( $restoreData, $restore ) {
 	pb_backupbuddy::status( 'details', 'Starting importbuddy cleanup procedures.' );
+	
+	if ( '' !== $restoreData['cleanup']['set_blog_public'] ) {
+		pb_backupbuddy::status( 'details', 'Changing blog_public search engine visibility based on selected setting.' );
+		$restore->setBlogPublic( $restoreData['cleanup']['set_blog_public'] );
+	} else {
+		pb_backupbuddy::status( 'details', 'No change to blog_public search engine visibility based on selected setting.' );
+	}
 	
 	if ( true !== $restoreData['cleanup']['deleteArchive'] ) {
 		pb_backupbuddy::status( 'details', 'Skipped deleting backup archive.' );
@@ -158,10 +192,10 @@ function cleanup( $restoreData ) {
 		remove_file( $state_file, 'Default state data file', false );
 	}
 	
+	global $importbuddy_file;
 	if ( true !== $restoreData['cleanup']['deleteImportBuddy'] ) {
 		pb_backupbuddy::status( 'details', 'Skipped deleting ' . $importbuddy_file . ' (this script).' );
 	} else {
-		global $importbuddy_file;
 		remove_file( ABSPATH . $importbuddy_file, $importbuddy_file . ' (this script)', true );
 	}
 	

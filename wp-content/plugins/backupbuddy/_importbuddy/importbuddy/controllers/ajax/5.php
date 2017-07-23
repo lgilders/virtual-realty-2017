@@ -31,6 +31,8 @@ function finalActions( $restore ) {
 	// Remove any temporary index.htm file created by ImportBuddy.
 	$restore->scrubIndexFiles();
 	
+	$restore->_state['blogPublicStatus'] = $restore->getBlogPublicSetting();
+	
 	// TODO: Make these thnings be able to output stuff into the cleanupSettings.htm template. Add functions?
 	// Update wpconfig if needed.
 	$wpconfig_result = $restore->migrateWpConfig();
@@ -59,15 +61,31 @@ function finalActions( $restore ) {
 if ( 'true' != pb_backupbuddy::_GET( 'deploy' ) ) { // deployment mode pre-loads state data in a file instead of passing via post.
 	// Parse submitted restoreData restore state from previous step.
 	$restoreData = pb_backupbuddy::_POST( 'restoreData' );
-	if ( NULL === ( $restoreData = json_decode( urldecode( base64_decode( $restoreData ) ), true ) ) ) { // All the encoding/decoding due to UTF8 getting mucked up along the way without all these layers. Blech!
-		$message = 'ERROR #83893b: unable to decode JSON restore data `' . htmlentities( $restoreData ) . '`. Restore halted.';
-		if ( function_exists( 'json_last_error' ) ) {
-	 		$message .= ' json_last_error: `' . json_last_error() . '`.';
-	 	}
+	
+	
+	// Decode submitted data, reporting details on failure.
+	$decodeFailReason = '';
+	if ( false === ( $restoreData = base64_decode( $restoreData ) ) ) { // false if failed
+		$decodeFailReason = 'ERROR #83893b: Restore halted. Unable to base64_decode() submitted form data `' . htmlentities( pb_backupbuddy::_POST( 'restoreData' ) ) . '`.';
+	} else { // Success.
+		$restoreData = urldecode( $restoreData );
+		if ( null === ( $restoreData = json_decode( $restoreData, true ) ) ) { // null if failed
+			$message = 'ERROR #83893b: Restore halted. Unable to decode JSON restore base64 decoded data `' . htmlentities( base64_decode( pb_backupbuddy::_POST( 'restoreData' ) ) ) . '`. Before base64 decode: `' . htmlentities( pb_backupbuddy::_POST( 'restoreData' ) ) . '`.';
+			if ( function_exists( 'json_last_error' ) ) {
+		 		$message .= ' json_last_error: `' . json_last_error() . '`.';
+		 	}
+		 	$decodeFailReason = $message;
+		} else { // Success.
+			pb_backupbuddy::status( 'details', 'Success decoding submitted encoded data.' );
+		}
+	}
+	// Report failure and fatally halt.
+	if ( '' !== $decodeFailReason ) {
 		pb_backupbuddy::alert( $message );
 		pb_backupbuddy::status( 'error', $message );
 		die();
 	}
+	
 	
 } else {
 	if ( isset( pb_backupbuddy::$options['default_state_overrides'] ) && ( count( pb_backupbuddy::$options['default_state_overrides'] ) > 0 ) ) { // Default state overrides exist. Apply them.

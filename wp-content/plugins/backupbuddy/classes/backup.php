@@ -126,6 +126,26 @@ class pb_backupbuddy_backup {
 	 */
 	function start_backup_process( $profile, $trigger = 'manual', $pre_backup = array(), $post_backup = array(), $schedule_title = '', $serial_override = '', $export_plugins = array(), $deployDirection = '', $deployDestinationSettings = '' ) {
 		
+		if ( $serial_override != '' ) {
+			$serial = $serial_override;
+		} else {
+			$serial = pb_backupbuddy::random_string( 10 );
+		}
+		pb_backupbuddy::set_status_serial( $serial ); // Default logging serial.
+		
+		// Temporarily hold excludes so we can put them back later after merging defaults.
+		$originalExcludes = $profile['excludes'];
+		
+		// Merge global profile defaults array. Save if merging added anything.
+		$default_global_profile = pb_backupbuddy::settings( 'default_options' );
+		$default_global_profile = $default_global_profile['profiles'][0];
+		$default_global_profile = array_merge( $default_global_profile, pb_backupbuddy::$options['profiles'][0] );
+		if ( $default_global_profile != pb_backupbuddy::$options['profiles'][0] ) {
+			pb_backupbuddy::$options['profiles'][0] = $default_global_profile;
+			pb_backupbuddy::save();
+			pb_backupbuddy::status( 'details', 'Default global profile needed updated with merged defaults. Updated and saved.' );
+		}
+		
 		// Load profile defaults.
 		$profile = array_merge( pb_backupbuddy::settings( 'profile_defaults' ), $profile );
 		foreach( $profile as $profile_item_name => &$profile_item ) { // replace non-overridden defaults with actual default value.
@@ -136,13 +156,22 @@ class pb_backupbuddy_backup {
 			}
 		}
 		
-		// Handle backup mode.
-		$backup_mode = pb_backupbuddy::$options['backup_mode']; // Load global default mode.
+		// Re-apply original excludes without defaults merged (handle these in get_directory_exclusions().
+		$profile['excludes'] = $originalExcludes;
+		
+		global $wp_version;
+		pb_backupbuddy::status( 'details', 'BackupBuddy v' . pb_backupbuddy::settings( 'version' ) . ' using WordPress v' . $wp_version . ' with PHP v' . PHP_VERSION . ' on ' . PHP_OS . ' operating system.' );
+		//pb_backupbuddy::status( 'details', __('Peak memory usage', 'it-l10n-backupbuddy' ) . ': ' . round( memory_get_peak_usage() / 1048576, 3 ) . ' MB' );
+		
 		if ( '1' == $profile['backup_mode'] ) { // Profile forces classic.
 			$backup_mode = '1';
 		} elseif ( '2' == $profile['backup_mode'] ) { // Profiles forces modern.
 			$backup_mode = '2';
+		} else {
+			pb_backupbuddy::status( 'warning', 'Warning #38984984: Unknown backup mode `' . $profile['backup_mode'] . '`. Defaulting to modern mode (2).' );
+			$backup_mode = '2';
 		}
+		pb_backupbuddy::status( 'details', 'Backup mode value setting to: `' . $backup_mode . '`. Profile was: `' . $profile['backup_mode'] . '`. Global default is: `' . (string)pb_backupbuddy::$options['profiles'][0]['backup_mode'] . '`.' );
 		$profile['backup_mode'] = $backup_mode;
 		unset( $backup_mode );
 		
@@ -151,17 +180,6 @@ class pb_backupbuddy_backup {
 			//global $pb_backupbuddy_js_status;
 			//$pb_backupbuddy_js_status = true;
 		}
-		
-		if ( $serial_override != '' ) {
-			$serial = $serial_override;
-		} else {
-			$serial = pb_backupbuddy::random_string( 10 );
-		}
-		pb_backupbuddy::set_status_serial( $serial ); // Default logging serial.
-		
-		global $wp_version;
-		pb_backupbuddy::status( 'details', 'BackupBuddy v' . pb_backupbuddy::settings( 'version' ) . ' using WordPress v' . $wp_version . ' on ' . PHP_OS . '.' );
-		//pb_backupbuddy::status( 'details', __('Peak memory usage', 'it-l10n-backupbuddy' ) . ': ' . round( memory_get_peak_usage() / 1048576, 3 ) . ' MB' );
 		
 		$type = $profile['type'];
 		
@@ -253,6 +271,12 @@ class pb_backupbuddy_backup {
 		} elseif ( $type == 'files' ) {
 			pb_backupbuddy::status( 'message', __( 'Files only backup mode.', 'it-l10n-backupbuddy' ) );
 			//$profile['skip_database_dump'] = '1';
+		} elseif ( $type == 'media' ) {
+			pb_backupbuddy::status( 'message', __( 'Media only backup mode.', 'it-l10n-backupbuddy' ) );
+		} elseif ( $type == 'themes' ) {
+			pb_backupbuddy::status( 'message', __( 'Themes only backup mode.', 'it-l10n-backupbuddy' ) );
+		} elseif ( $type == 'plugins' ) {
+			pb_backupbuddy::status( 'message', __( 'Plugins only backup mode.', 'it-l10n-backupbuddy' ) );
 		} elseif ( $type == 'export' ) {
 			pb_backupbuddy::status( 'message', __( 'Multisite subsite export mode.', 'it-l10n-backupbuddy' ) );
 		} else {
@@ -296,7 +320,7 @@ class pb_backupbuddy_backup {
 				}
 			}
 		}
-				
+		
 		// Generate unique serial ID.
 		pb_backupbuddy::status( 'details', 'Backup serial generated: `' . $serial . '`.' );
 		
@@ -323,7 +347,7 @@ class pb_backupbuddy_backup {
 		
 		
 		// Output active plugins list for debugging...
-		if ( ( 'files' != $type ) || ( ! isset( $profile['custom_root'] ) ) || ( '' == $profile['custom_root'] ) ) {
+		if ( ( 'full' == $type ) && ( ( ! isset( $profile['custom_root'] ) ) || ( '' == $profile['custom_root'] ) ) ) {
 			$activePlugins = get_option( 'active_plugins' );
 			pb_backupbuddy::status( 'details', 'Active WordPress plugins (' . count( $activePlugins ) . '): `' . implode( '; ', $activePlugins ) . '`.' );
 			pb_backupbuddy::status( 'startSubFunction', json_encode( array( 'function' => 'wp_plugins_found', 'title' => 'Found ' . count( $activePlugins ) . ' active WordPress plugins.' ) ) );
@@ -365,11 +389,13 @@ class pb_backupbuddy_backup {
 		$custom_root = '';
 		// Files type profile with a custom root does NOT currently support exclusions at all. Strip all excludes.
 		if ( ( $type == 'files' ) && ( isset( $profile['custom_root'] ) ) && ( '' != $profile['custom_root'] ) ) {
-			$dir_excludes = array();
-			pb_backupbuddy::status( 'warning', 'Warning #33333893833: Files profile with custom root does not currently support any file or directory exclusions. Skipping any exclusions for this backup.' );
-			$profile['integrity_check'] = '0';
-			pb_backupbuddy::status( 'warning', 'Warning #3434794793: Files profile with custom root are not currently submitted for integrity checks.' );
-			$custom_root = $profile['custom_root'];
+			$custom_root = ABSPATH . '/' . ltrim( $profile['custom_root'], '/\\' );
+		}
+
+		// Force custom root trailing slash
+		if ( '' != $custom_root ) {
+			$custom_root = rtrim( $custom_root, '/\\' ) . '/';
+			pb_backupbuddy::status( 'details', 'Custom backup root after enforcing trailing slash: `' . $custom_root . '`.' );
 		}
 		
 		// Set up the backup data.
@@ -417,8 +443,6 @@ class pb_backupbuddy_backup {
 		);
 		
 		if ( ( $this->_backup['type'] == 'files' ) && ( isset( $profile['custom_root'] ) ) && ( '' != $profile['custom_root'] ) ) {
-			pb_backupbuddy::status( 'startSubFunction', json_encode( array( 'function' => 'file_excludes', 'title' => 'File & directory exclusions disabled for "Files" profiles with custom root. Skipping exclusions.' ) ) );
-		} else {
 			pb_backupbuddy::status( 'startSubFunction', json_encode( array( 'function' => 'file_excludes', 'title' => 'Found ' . count( $this->_backup['directory_exclusions'] ) . ' file or directory exclusions.' ) ) );
 		}
 		
@@ -437,7 +461,7 @@ class pb_backupbuddy_backup {
 			
 			// Support for custom root for files backup type if set.
 			if ( ( $this->_backup['type'] == 'files' ) && ( isset( $profile['custom_root'] ) ) && ( '' != $profile['custom_root'] ) ) {
-				$this->_backup['backup_root'] = rtrim( $profile['custom_root'], '\\/' ) . '/';
+				$this->_backup['backup_root'] = ABSPATH . trim( $profile['custom_root'], '\\/' ) . '/';
 				pb_backupbuddy::status( 'warning', 'Warning #3894743: Custom backup root set. Use with caution. Custom root: `' . $this->_backup['backup_root'] . '`.' );
 				if ( ! file_exists( $this->_backup['backup_root'] ) ) {
 					pb_backupbuddy::status( 'error', 'Error #32893444. Custom backup root directory NOT found! Custom root: `' . $this->_backup['backup_root'] . '`.' );
@@ -451,6 +475,17 @@ class pb_backupbuddy_backup {
 			// WordPress unzips into wordpress subdirectory by default so must include that in path.
 			$this->_backup['temp_directory'] = backupbuddy_core::getTempDirectory() . $serial . '/wordpress/wp-content/uploads/backupbuddy_temp/' . $serial . '/'; // We store temp data for export within the temporary WordPress installation within the temp directory. A bit confusing; sorry about that.
 			$this->_backup['backup_root'] = backupbuddy_core::getTempDirectory() . $serial . '/wordpress/';
+
+		} elseif ( $this->_backup['type'] == 'media' ) {
+			$this->_backup['temp_directory'] = backupbuddy_core::getTempDirectory() . $serial . '/';
+			$this->_backup['backup_root'] = backupbuddy_core::get_media_root();
+		} elseif ( $this->_backup['type'] == 'themes' ) {
+			$this->_backup['temp_directory'] = backupbuddy_core::getTempDirectory() . $serial . '/';
+			$this->_backup['backup_root'] = backupbuddy_core::get_themes_root();
+		} elseif ( $this->_backup['type'] == 'plugins' ) {
+			$this->_backup['temp_directory'] = backupbuddy_core::getTempDirectory() . $serial . '/';
+			$this->_backup['backup_root'] = backupbuddy_core::get_plugins_root();
+
 		} else {
 			pb_backupbuddy::status( 'error', __('Backup FAILED. Unknown backup type.', 'it-l10n-backupbuddy' ) );
 			pb_backupbuddy::status( 'haltScript', '' ); // Halt JS on page.
@@ -470,7 +505,7 @@ class pb_backupbuddy_backup {
 		$this->_backup['additional_table_excludes'] = backupbuddy_core::get_mysqldump_additional( 'excludes', $profile );
 		
 		// Verify wp-config.php exists if not a files type.
-		if ( 'files' != $this->_backup['type'] ) {
+		if ( ( 'files' != $this->_backup['type'] ) && ( 'media' != $this->_backup['type'] ) && ( 'plugins' != $this->_backup['type'] ) && ( 'themes' != $this->_backup['type'] ) ) {
 			// Does wp-config.php exist in parent dir instead of normal location?
 			if ( file_exists( ABSPATH . 'wp-config.php' ) ) { // wp-config in normal place.
 				pb_backupbuddy::status( 'details', 'wp-config.php found in normal location.' );
@@ -536,7 +571,7 @@ class pb_backupbuddy_backup {
 			);
 		}
 		
-		if ( ( 'pull' != $deployDirection ) && ( '1' != $profile['skip_database_dump'] ) && ( $profile['type'] != 'files' ) ) { // Backup database if not skipping AND not a files only backup.
+		if ( ( 'pull' != $deployDirection ) && ( '1' != $profile['skip_database_dump'] ) && ( $profile['type'] != 'files' ) && ( $profile['type'] != 'plugins' ) && ( $profile['type'] != 'themes' ) && ( $profile['type'] != 'media' ) ) { // Backup database if not skipping AND not a files only backup.
 			
 			global $wpdb;
 			// Default tables to backup.

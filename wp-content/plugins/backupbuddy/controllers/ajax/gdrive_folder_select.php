@@ -22,6 +22,12 @@ $settings = array();
 $clientID = pb_backupbuddy::_POST( 'clientID' );
 $clientSecret = pb_backupbuddy::_POST( 'clientSecret' );
 $tokens = pb_backupbuddy::_POST( 'tokens' );
+
+$service_account_email = pb_backupbuddy::_POST( 'service_account_email' );
+$service_account_file = pb_backupbuddy::_POST( 'service_account_file' );
+$settings['service_account_email'] = $service_account_email;
+$settings['service_account_file'] = $service_account_file;
+
 $settings['client_id'] = $clientID;
 $settings['client_secret'] = $clientSecret;
 $settings['tokens'] = $tokens;
@@ -34,7 +40,7 @@ $returnFiles = array();
 
 // Get all folders in this parent location.
 $files = pb_backupbuddy_destination_gdrive::listFiles( $settings, 'mimeType = "application/vnd.google-apps.folder" AND "' . $parentID . '" in parents AND trashed=false' ); //"title contains 'backup' and trashed=false" ); //"title contains 'backup' and trashed=false" );
-foreach( $files as $file ) {
+foreach( (array)$files as $file ) {
 	if ( '1' != $file->editable ) { // Only show folders we can write to.
 		continue;
 	}

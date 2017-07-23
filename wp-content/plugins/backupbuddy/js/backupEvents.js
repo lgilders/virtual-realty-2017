@@ -370,14 +370,19 @@ jQuery('#backupbuddy_messages').bind( 'backupbuddy_finishTableDump', function(e,
 
 
 jQuery('#backupbuddy_messages').bind( 'backupbuddy_sqlSize', function(e, json) {
+	if ( ! jQuery.isNumeric( json.data ) ) {
+		return;
+	}
+	
 	if ( last_sql_size != json.data ) { // Track time archive size last changed.
 		last_sql_size = json.data;
 		last_sql_change = unix_timestamp();
 	}
-	backupbuddy_currentDatabaseSize = parseInt( json.data, 10 ) + parseInt( backupbuddy_currentDatabaseSize, 10 );
-	//console.log( 'newdbsize: ' + backupbuddy_currentDatabaseSize );
+	//backupbuddy_log( 'prevdbsize: ' + window.backupbuddy_currentDatabaseSize );
+	window.backupbuddy_currentDatabaseSize = parseInt( window.backupbuddy_currentDatabaseSize, 10 ) + parseInt( json.data, 10 );
+	//backupbuddy_log( 'newdbsize: ' + window.backupbuddy_currentDatabaseSize );
 	
-	totalPrettySize = backupbuddy_bytesToSize( backupbuddy_currentDatabaseSize );
+	totalPrettySize = backupbuddy_bytesToSize( window.backupbuddy_currentDatabaseSize );
 	jQuery( '.backupbuddy_sql_size' ).text( totalPrettySize );
 	backupbuddy_log( 'Total aggregate SQL dump size so far: ' + totalPrettySize );
 });

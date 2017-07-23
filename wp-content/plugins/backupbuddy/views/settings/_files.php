@@ -31,12 +31,34 @@ if ( isset( pb_backupbuddy::$options['profiles'][$profile] ) ) {
 			}
 			return false;
 		});
+		
+		jQuery( '.custom_root_input' ).keyup( function(){
+			jQuery( '#custom_root-changed_notice' ).show();
+		});
+		
 	});
 </script>
 
 
 
 <?php
+global $filetree_root;
+$abslen = strlen( ABSPATH );
+if ( 'files' == $profile_array['type'] ) {
+	if ( '' != $profile_array['custom_root'] ) {
+		$filetree_root = rtrim( $profile_array['custom_root'], '\\/' ) . '/';
+	} else {
+		$filetree_root = '/';
+	}
+} elseif ( 'media' == $profile_array['type'] ) {
+	$filetree_root = substr( backupbuddy_core::get_media_root(), $abslen-1 ) . '/';
+} elseif ( 'plugins' == $profile_array['type'] ) {
+	$filetree_root = substr( backupbuddy_core::get_plugins_root(), $abslen-1 ) . '/';
+} elseif ( 'themes' == $profile_array['type'] ) {
+	$filetree_root = substr( backupbuddy_core::get_themes_root(), $abslen-1 ) . '/';
+} else {
+	$filetree_root = '/';
+}
 require_once( '_filetree.php' );
 
 
@@ -49,17 +71,69 @@ if ( $profile_array['type'] == 'defaults' ) {
 }
 
 
+if ( 'files' == $profile_array['type'] ) {
+	$settings_form->add_setting( array(
+		'type'		=>		'text',
+		'name'		=>		'profiles#' . $profile_id . '#custom_root',
+		'classes'		=>		'custom_root_input',
+		'title'		=>		__('Custom backup root path', 'it-l10n-backupbuddy' ),
+		'tip'		=>		__('[Default: blank] - If set then data will be backed up starting at the specified path, RELATIVE to your site\'s ABSPATH (WordPress root). You may use /../ to enter parent directories ABOVE the site\'s ABSPATH (WordPress root), eg: /../aparentdir/. IMPORTANT: If entering profile-specific exclusions these exclusions should also be entered relative to the custom root. Global exclusions are still relative to the ABSPATH and will automatically be translated to the relative path and applied.' ),
+		'rules'		=>		'',
+		'css'		=>		'width: 100%;',
+		'before'		=>		'<span style="white-space: nowrap;">',
+		'after'		=>		'<br>Enter RELATIVE to you site ABSPATH:<br><div class="code" style="background: #EAEAEA; white-space: normal; width: 100%; overflow: auto;">' . ABSPATH . '</div><span id="custom_root-changed_notice" style="display: none; color: red;">Save Profile Settings to update directory exclusion picker.</span>',
+	) );
+}
+
+if ( 'media' == $profile_array['type'] ) {
+	$settings_form->add_setting( array(
+		'type'		=>		'plaintext',
+		'name'		=>		'profiles#' . $profile_id . '#mediadirtext',
+		'title'		=>		__('Media Directory (profile backup root)', 'it-l10n-backupbuddy' ),
+		'tip'		=>		__( 'The Media backup type is a "smart" profile which automatically selects your WordPress media directory root as its backup root to simplify backing up just your media.' ),
+		'rules'		=>		'',
+		'css'		=>		'width: 100%;',
+		'before'		=>		'<span style="white-space: nowrap;">',
+		'after'		=>		'<div class="code" style="background: #EAEAEA; white-space: normal; width: 100%; overflow: auto;">' . backupbuddy_core::get_media_root() . '</div>',
+	) );
+}
+
+if ( 'plugins' == $profile_array['type'] ) {
+	$settings_form->add_setting( array(
+		'type'		=>		'plaintext',
+		'name'		=>		'profiles#' . $profile_id . '#pluginsdirtext',
+		'title'		=>		__('Plugins Directory (profile backup root)', 'it-l10n-backupbuddy' ),
+		'tip'		=>		__( 'The Plugins backup type is a "smart" profile which automatically selects your WordPress plugins directory root as its backup root to simplify backing up just your media.' ),
+		'rules'		=>		'',
+		'css'		=>		'width: 100%;',
+		'before'		=>		'<span style="white-space: nowrap;">',
+		'after'		=>		'<div class="code" style="background: #EAEAEA; white-space: normal; width: 100%; overflow: auto;">' . backupbuddy_core::get_plugins_root() . '</div>',
+	) );
+}
+
+if ( 'themes' == $profile_array['type'] ) {
+	$settings_form->add_setting( array(
+		'type'		=>		'plaintext',
+		'name'		=>		'profiles#' . $profile_id . '#themesdirtext',
+		'title'		=>		__('Themes Directory (profile backup root)', 'it-l10n-backupbuddy' ),
+		'tip'		=>		__( 'The Themes backup type is a "smart" profile which automatically selects your WordPress themes directory root as its backup root to simplify backing up just your media.' ),
+		'rules'		=>		'',
+		'css'		=>		'width: 100%;',
+		'before'		=>		'<span style="white-space: nowrap;">',
+		'after'		=>		'<div class="code" style="background: #EAEAEA; white-space: normal; width: 100%; overflow: auto;">' . backupbuddy_core::get_themes_root() . '</div>',
+	) );
+}
+
 if ( $profile_array['type'] != 'defaults' ) {
 	$settings_form->add_setting( array(
 		'type'		=>		'checkbox',
 		'name'		=>		'profiles#' . $profile_id . '#profile_globalexcludes',
 		'options'	=>		array( 'unchecked' => '0', 'checked' => '1' ),
-		'title'		=>		'Use global defaults for files to backup?',
-		'after'		=>		' Use global defaults<br><span class="description" style="padding-left: 25px;">Uncheck to customize files.</span>',
+		'title'		=>		'Use global exclusion defaults?',
+		'after'		=>		' Use global defaults<br><span class="description" style="padding-left: 25px;">Uncheck to customize exclusions.</span>',
 		'css'		=>		'',
 	) );
 }
-
 
 $settings_form->add_setting( array(
 	'type'		=>		'textarea',
@@ -70,22 +144,39 @@ $settings_form->add_setting( array(
 	//'tip'		=>		,
 	'rules'		=>		'string[0-9000]',
 	'css'		=>		'width: 100%; height: 135px;',
-	'before'	=>		$before_text . pb_backupbuddy::tip( __('List paths relative to the WordPress installation directory to be excluded from backups.  You may use the directory selector to the left to easily exclude directories by ctrl+clicking them.  Paths are relative to root, for example: /wp-content/uploads/junk/', 'it-l10n-backupbuddy' ), '', false ) . '<br>',
-	'after'		=>		'<span class="description">' . __( 'One file or directory exclusion per line.', 'it-l10n-backupbuddy' ) . '</span>',
+	'before'		=>		$before_text . pb_backupbuddy::tip( __('List paths relative to the WordPress installation directory to be excluded from backups.  You may use the directory selector to the left to easily exclude directories by ctrl+clicking them.  Paths are relative to root, for example: /wp-content/uploads/junk/. Three variables are also permitted to exclude common WordPress directories: {media}, {plugins}, {themes}', 'it-l10n-backupbuddy' ), '', false ) . '<br>',
+	'after'		=>		'<span class="description">' . __( 'One exclusion per line. <b>Enter RELATIVE to your backup root.</b>', 'it-l10n-backupbuddy' ) . '</span>',
 ) );
 
-
-if ( 'files' == $profile_array['type'] ) {
+if ( ( 'full' == $profile_array['type'] ) || ( 'files' == $profile_array['type'] ) ) {
+	if ( 'full' != $profile_array['type'] ) {
+		$settings_form->add_setting( array(
+			'type'		=>		'checkbox',
+			'name'		=>		'profiles#' . $profile_id . '#exclude_media',
+			'options'	=>		array( 'unchecked' => '0', 'checked' => '1' ),
+			'title'		=>		'Auto-exclude Media Directory',
+			'css'		=>		'',
+			'tip'		=>		__( 'When enabled the current WordPress Media directory will be automatically excluded from backups made with this profile, even if the directory changes in the future. Current directory:', 'it-l10n-backupbuddy' ) . ' ' . backupbuddy_core::get_media_root(),
+		) );
+	}
 	$settings_form->add_setting( array(
-		'type'		=>		'text',
-		'name'		=>		'profiles#' . $profile_id . '#custom_root',
-		'title'		=>		__('Custom backup root path (BETA)', 'it-l10n-backupbuddy' ),
-		'tip'		=>		__('[Default: blank] - If set then data will be backed up starting at the specified directory. !!!File and directory exclusions are not supported when using a custom root!!! Include trailing slash. If blank the WordPress reported ABSPATH value will be used (WordPress installation root).' ),
-		'rules'		=>		'',
-		'css'		=>		'width: 100%;',
-		'before'		=>		'<span style="white-space: nowrap;">',
-		'after'		=>		'<br><font color="red">' . __( 'NOTE: File exclusions not supported for custom root profiles.', 'lion' ) . '</font>',
+		'type'		=>		'checkbox',
+		'name'		=>		'profiles#' . $profile_id . '#exclude_themes',
+		'options'	=>		array( 'unchecked' => '0', 'checked' => '1' ),
+		'title'		=>		'Auto-exclude Themes Directory',
+		'css'		=>		'',
+		'tip'		=>		__( 'When enabled the current WordPress Themes directory will be automatically excluded from backups made with this profile, even if the directory changes in the future. Current directory:', 'it-l10n-backupbuddy' ) . ' ' . backupbuddy_core::get_themes_root(),
+	) );
+	$settings_form->add_setting( array(
+		'type'		=>		'checkbox',
+		'name'		=>		'profiles#' . $profile_id . '#exclude_plugins',
+		'options'	=>		array( 'unchecked' => '0', 'checked' => '1' ),
+		'title'		=>		'Auto-exclude Plugins Directory',
+		'css'		=>		'',
+		'tip'		=>		__( 'When enabled the current WordPress Plugins directory will be automatically excluded from backups made with this profile, even if the directory changes in the future. Current directory:', 'it-l10n-backupbuddy' ) . ' ' . backupbuddy_core::get_plugins_root(),
 	) );
 }
+
+
 
 

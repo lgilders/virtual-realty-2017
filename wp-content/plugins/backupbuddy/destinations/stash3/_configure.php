@@ -5,7 +5,7 @@
 		$mode
 */
 if ( isset( $destination['disabled'] ) && ( '1' == $destination['disabled'] ) ) {
-	die( __( 'This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.', 'it-l10n-backupbuddy' ) );
+	die( __( '<span class="description">This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.</span>', 'it-l10n-backupbuddy' ) );
 }
 
 global $pb_hide_test, $pb_hide_save;
@@ -99,8 +99,8 @@ if ( $mode == 'add' ) { // ADD MODE.
 } elseif ( $mode == 'edit' ) { // EDIT MODE.
 	
 	$settings = array(
-		'itxapi_username' => $itxapi_username,
-		'itxapi_token' => $itxapi_token,
+		'itxapi_username' => $destination_settings['itxapi_username'],
+		'itxapi_token' => $destination_settings['itxapi_token'],
 	);
 	$account_info = pb_backupbuddy_destination_stash3::get_quota( $settings );
 	$itxapi_username = $destination_settings['itxapi_username'];
@@ -197,18 +197,43 @@ if ( ( $mode == 'save' ) || ( $mode == 'edit' ) || ( $itxapi_token != '' ) ) {
 		'css'		=>		'width: 50px;',
 		'after'		=>		' backups. &nbsp;<span class="description">0 or blank for no limit.</span>',
 	) );
-	/*
+	
 	$settings_form->add_setting( array(
 		'type'		=>		'text',
-		'name'		=>		'files_archive_limit',
-		'title'		=>		__( 'Files only limit', 'it-l10n-backupbuddy' ),
-		'tip'		=>		__( '[Example: 5] - Enter 0 for no limit. This is the maximum number of Files Only backup archives to be stored in this specific destination. If this limit is met the oldest backup of this type will be deleted.', 'it-l10n-backupbuddy' ),
+		'name'		=>		'themes_archive_limit',
+		'title'		=>		__( 'Themes only limit', 'it-l10n-backupbuddy' ),
+		'tip'		=>		__( '[Example: 5] - Enter 0 for no limit. This is the maximum number of this type of archive to be stored in this specific destination. If this limit is met the oldest backup of this type will be deleted.', 'it-l10n-backupbuddy' ),
 		'rules'		=>		'int[0-9999999]',
 		'css'		=>		'width: 50px;',
 		'after'		=>		' backups. &nbsp;<span class="description">0 or blank for no limit.</span>',
 	) );
-	*/
-	
+	$settings_form->add_setting( array(
+		'type'		=>		'text',
+		'name'		=>		'plugins_archive_limit',
+		'title'		=>		__( 'Plugins only limit', 'it-l10n-backupbuddy' ),
+		'tip'		=>		__( '[Example: 5] - Enter 0 for no limit. This is the maximum number of this type of archive to be stored in this specific destination. If this limit is met the oldest backup of this type will be deleted.', 'it-l10n-backupbuddy' ),
+		'rules'		=>		'int[0-9999999]',
+		'css'		=>		'width: 50px;',
+		'after'		=>		' backups. &nbsp;<span class="description">0 or blank for no limit.</span>',
+	) );
+	$settings_form->add_setting( array(
+		'type'		=>		'text',
+		'name'		=>		'media_archive_limit',
+		'title'		=>		__( 'Media only limit', 'it-l10n-backupbuddy' ),
+		'tip'		=>		__( '[Example: 5] - Enter 0 for no limit. This is the maximum number of this type of archive to be stored in this specific destination. If this limit is met the oldest backup of this type will be deleted.', 'it-l10n-backupbuddy' ),
+		'rules'		=>		'int[0-9999999]',
+		'css'		=>		'width: 50px;',
+		'after'		=>		' backups. &nbsp;<span class="description">0 or blank for no limit.</span>',
+	) );
+	$settings_form->add_setting( array(
+		'type'		=>		'text',
+		'name'		=>		'files_archive_limit',
+		'title'		=>		__( 'Files only limit', 'it-l10n-backupbuddy' ),
+		'tip'		=>		__( '[Example: 5] - Enter 0 for no limit. This is the maximum number of this type of archive to be stored in this specific destination. If this limit is met the oldest backup of this type will be deleted.', 'it-l10n-backupbuddy' ),
+		'rules'		=>		'int[0-9999999]',
+		'css'		=>		'width: 50px;',
+		'after'		=>		' backups. &nbsp;<span class="description">0 or blank for no limit.</span>',
+	) );
 	
 	$settings_form->add_setting( array(
 		'type'		=>		'title',
@@ -283,16 +308,15 @@ if ( ( $mode == 'save' ) || ( $mode == 'edit' ) || ( $itxapi_token != '' ) ) {
 		'rules'		=>		'',
 		'row_class'	=>		'advanced-toggle',
 	) );
-	if ( ( $mode !== 'edit' ) || ( '0' == $destination_settings['disable_file_management'] ) ) {
+	if ( $mode !== 'edit' ) {
 		$settings_form->add_setting( array(
 			'type'		=>		'checkbox',
 			'name'		=>		'disable_file_management',
 			'options'	=>		array( 'unchecked' => '0', 'checked' => '1' ),
 			'title'		=>		__( 'Disable file management', 'it-l10n-backupbuddy' ),
-			'tip'		=>		__( '[[Default: unchecked] - When checked, selecting this destination disables browsing or accessing files stored at this destination from within BackupBuddy. NOTE: Once enabled this cannot be disabled without deleting and re-creating this destination. NOTE: Once enabled this cannot be disabled without deleting and re-creating this destination.', 'it-l10n-backupbuddy' ),
+			'tip'		=>		__( '[Default: unchecked] - When checked, selecting this destination disables browsing or accessing files stored at this destination from within BackupBuddy.', 'it-l10n-backupbuddy' ),
 			'css'		=>		'',
 			'rules'		=>		'',
-			'after'		=>		__( 'Once disabled you must recreate the destination to re-enable.', 'it-l10n-backupbuddy' ),
 			'row_class'	=>		'advanced-toggle',
 		) );
 	}

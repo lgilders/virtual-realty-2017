@@ -5,7 +5,7 @@ class backupbuddy_restore {
 	
 	public $_state = array();		// Holds current state data. Retrieve with getState() and pass onto next run in the constructor.
 	private $_errors = array();		// Hold error strings to retrieve with getErrors().
-	
+	private $_dbConnected = false;	// True if already connected this session.
 	
 	
 	/* __construct()
@@ -68,6 +68,7 @@ class backupbuddy_restore {
 									'migrateResumePoint' => '',
 								),
 			'cleanup' => array(					// Step 6 cleanup options.
+				'set_blog_public' => '',			// Search engine visibility. Empty string to keep the same. true to enable (option set to 1), false to disable (option set to 0).
 				'deleteArchive' => true,
 				'deleteTempFiles' => true,
 				'deleteImportBuddy' => true,
@@ -75,6 +76,7 @@ class backupbuddy_restore {
 				'deleteImportLog' => true,
 								),
 			'potentialProblems' => array(),		// Array of potential issues encountered to show the user AFTER import is done.
+			//'blogPublicStatus' => '',			// 1, 0, or empty string for untested/unknown.
 			'stepHistory' => array(),			// Array of arrays of the step functions run thus far. Track start and finish times.
 		);
 
@@ -1410,6 +1412,11 @@ class backupbuddy_restore {
 	function connectDatabase() {
 		$this->_before( __FUNCTION__ );
 		
+		if ( true === $this->_dbConnected ) {
+			pb_backupbuddy::status( 'details', 'Already connected to database from prior connectDatabase() call. Skipping.' );
+			return true;
+		}
+		
 		global $wpdb;
 		$wpdb = new wpdb( $this->_state['databaseSettings']['username'], $this->_state['databaseSettings']['password'], $this->_state['databaseSettings']['database'],$this->_state['databaseSettings']['server'] );
 		
@@ -1443,8 +1450,65 @@ class backupbuddy_restore {
 			pb_backupbuddy::status( 'details', 'Incoming mysql version: `Unknown`. This server\'s mysql version: `' . $thisVersion . '`.' );
 		}
 		
+		$this->_dbConnected = true;
+		
 		return true;
 	} // End connectDatabase().
+	
+	
+	
+	function getBlogPublicSetting() {
+		$this->_before( __FUNCTION__ );
+		if ( true !== self::connectDatabase() ) {
+			return '';
+		}
+		
+		pb_backupbuddy::status( 'details', 'Checking current blog_public option setting.' );
+		
+		global $wpdb;
+		
+		// NEW prefix
+		$sql = "SELECT option_value FROM `" . $this->_state['databaseSettings']['prefix'] . "options` WHERE option_name='blog_public';";
+		$results = $wpdb->get_results( $sql, ARRAY_A );
+		pb_backupbuddy::status( 'details', 'Found ' . count( $results ) . ' results seeking blog_public option.' );
+		
+		return $results[0]['option_value'];
+	} // End getBlogPublicSetting().
+	
+	
+	
+	// true on success, else false
+	function setBlogPublic( $setting ) {
+		if ( '' === $setting ) { // No change.
+			return true;
+		}
+		
+		$this->_before( __FUNCTION__ );
+		if ( true !== self::connectDatabase() ) {
+			return false;
+		}
+		
+		if ( true === $setting ) {
+			$setting = '1';
+		} elseif ( false === $setting ) {
+			$setting = '0';
+		} else {
+			pb_backupbuddy::status( 'error', 'Error #48374734: Unexpected invalid setBlogPublic() value `' . $setting . '`.' );
+			return false;
+		}
+		
+		pb_backupbuddy::status( 'details', 'Setting new blog_public search engine visibility setting to `' . $setting . '`.' );
+		
+		global $wpdb;
+		
+		// NEW prefix
+		$sql = "UPDATE `" . $this->_state['databaseSettings']['prefix'] . "options` SET option_value='" . backupbuddy_core::dbEscape( $setting ) . "' WHERE option_name='blog_public' LIMIT 1;";
+		$wpdb->query( $sql );
+		pb_backupbuddy::status( 'details', 'Modified ' . $wpdb->rows_affected . ' row(s) while updating blog_public.' );
+		if ( ! empty( $wpdb->last_error ) ) { pb_backupbuddy::status( 'error', 'mysql error: ' . $wpdb->last_error ); }
+		
+		return true;
+	}
 	
 	
 	
@@ -1544,7 +1608,7 @@ class backupbuddy_restore {
 	
 	
 	function _array_replace_recursive($array, $array1) {
-		function recurse($array, $array1)
+		function bb_recurse($array, $array1)
 		{
 		  foreach ($array1 as $key => $value)
 		  {
@@ -1557,7 +1621,7 @@ class backupbuddy_restore {
 		    // overwrite the value in the base array
 		    if (is_array($value))
 		    {
-		      $value = recurse($array[$key], $value);
+		      $value = bb_recurse($array[$key], $value);
 		    }
 		    $array[$key] = $value;
 		  }
@@ -1575,7 +1639,7 @@ class backupbuddy_restore {
 		{
 		  if (is_array($args[$i]))
 		  {
-		    $array = recurse($array, $args[$i]);
+		    $array = bb_recurse($array, $args[$i]);
 		  }
 		}
 		return $array;

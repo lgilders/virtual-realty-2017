@@ -10,7 +10,7 @@ backupbuddy_core::verifyAjaxAccess();
 
 pb_backupbuddy::load();
 
-pb_backupbuddy::$ui->ajax_header();
+pb_backupbuddy::$ui->ajax_header( true, true );
 
 $mode = 'destination';
 require_once( '_destination_picker.php' );

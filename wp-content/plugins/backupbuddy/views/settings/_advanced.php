@@ -176,6 +176,16 @@ $settings_form->add_setting( array(
 ) );
 $settings_form->add_setting( array(
 	'type'		=>		'checkbox',
+	'name'		=>		'hide_dashboard_widget',
+	'options'		=>		array( 'unchecked' => '0', 'checked' => '1' ),
+	'title'		=>		__( 'Hide widget & option from dashboard', 'it-l10n-backupbuddy' ),
+	'tip'		=>		__( '[Default: Unchecked] When checked the BackupBuddy widget option will be completely removed from the dashboard for all users.', 'it-l10n-backupbuddy' ),
+	'css'		=>		'',
+	'after'		=>		'<span class="description"> ' . __( 'Check to hide.', 'it-l10n-backupbuddy' ) . '</span>',
+	'rules'		=>		'required',
+) );
+$settings_form->add_setting( array(
+	'type'		=>		'checkbox',
 	'name'		=>		'set_greedy_execution_time',
 	'options'	=>		array( 'unchecked' => '0', 'checked' => '1' ),
 	'title'		=>		__( 'Attempt to override PHP max execution time', 'it-l10n-backupbuddy' ),
@@ -295,7 +305,7 @@ $settings_form->add_setting( array(
 
 $settings_form->add_setting( array(
 	'type'		=>		'select',
-	'name'		=>		'backup_mode',
+	'name'		=>		'profiles#0#backup_mode',
 	'title'		=>		'<b>' . __('Default global backup mode', 'it-l10n-backupbuddy' ) . '</b>',
 	'options'	=>		array(
 								'1'		=>		__( 'Classic (v1.x) - Entire backup in single PHP page load', 'it-l10n-backupbuddy' ),

@@ -690,7 +690,12 @@ class backupbuddy_migrateDB {
 		
 		foreach( (array)$steps as $step ) {
 			pb_backupbuddy::status( 'details', 'Running bruteforce substep to migrate: `' . $step[0] . '`. Substeps remaining: `' . count( $steps ) . '`.' );
-			$this->restoreData['databaseSettings']['migrateResumePoint'][1] = ''; // Clear out needing to resume this substep for now.
+			if ( ! isset( $this->restoreData['databaseSettings']['migrateResumePoint'] ) ) { // Prevent "Warning: Cannot assign an empty string to a string offset" in PHP 7.1.
+				$this->restoreData['databaseSettings']['migrateResumePoint'] = array();
+			}
+			if ( is_array( $this->restoreData['databaseSettings']['migrateResumePoint'] ) ) {
+				$this->restoreData['databaseSettings']['migrateResumePoint'][1] = ''; // Clear out needing to resume this substep for now.
+			}
 
 			// Run the function.
 			pb_backupbuddy::status( 'details', 'Starting substep `' . $step[0] . '`.' );

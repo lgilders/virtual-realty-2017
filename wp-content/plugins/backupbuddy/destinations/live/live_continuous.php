@@ -40,10 +40,10 @@ class backupbuddy_live_continuous {
 		'uninstall_plugins',
 		'wwcAmzAff_sync_last_updated_product',
 		'popup_domination_updateinfo',
+		'wordfence_syncAttackDataAttempts',
 	);
 	private static $_postmeta_exclusions = array(
 		'pvc_views',
-		
 		'_edit_lock',
 		'views',
 		'option_overall_score',
@@ -79,6 +79,7 @@ class backupbuddy_live_continuous {
 		'_price_update_date',
 		'/_impressions/',
 		'snapImportedFBComments',
+		'/_count-views_.+/', // Adrotate plugin
 	);
 	
 	/* init()

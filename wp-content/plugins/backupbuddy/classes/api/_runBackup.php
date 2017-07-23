@@ -1,6 +1,6 @@
 <?php
 if ( '' == $backupMode ) {
-	$backupMode = pb_backupbuddy::$options['backup_mode']; // Use user-defined setting.
+	$backupMode = pb_backupbuddy::$options['profiles'][0]['backup_mode']; // Use user-defined setting.
 }
 if ( ! isset( $triggerTitle ) || ( '' == $triggerTitle ) ) {
 	$triggerTitle = 'manual';
@@ -29,7 +29,7 @@ if ( is_array( $generic_type_or_profile_id_or_array ) ) { // is a profile array
 }
 
 
-
+$profileArray = array_merge( pb_backupbuddy::$options['profiles'][0], $profileArray ); // Merge defaults.
 $profileArray['backup_mode'] = $backupMode; // Force modern mode when running under API. 1=classic (single page load), 2=modern (cron)
 
 if ( '' == $backupSerial ) {

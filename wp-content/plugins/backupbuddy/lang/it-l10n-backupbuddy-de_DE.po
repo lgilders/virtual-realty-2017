@@ -96,13 +96,6 @@ msgid "<strong>ERROR</strong>: WordPress %1$s requires MySQL %2$s or higher"
 msgstr ""
 "<strong>FEHLER</strong>: WordPress %1$s erfordert MySQL %2$s oder neuer"
 
-#: _importbuddy/importbuddy/controllers/pages/server_tools.php:31
-#: controllers/pages/_backup-home.php:36 controllers/pages/destinations.php:33
-#: controllers/pages/migrate_restore.php:37
-#: controllers/pages/server_tools.php:31 controllers/pages/settings.php:18
-msgid "Tour Page"
-msgstr "Tutorial"
-
 #: _importbuddy/importbuddy/controllers/pages/server_tools.php:59
 #: controllers/pages/-DEL-server_tools.php:6
 #: controllers/pages/server_tools.php:59 init_admin.php:145 init_admin.php:179

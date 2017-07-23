@@ -4,7 +4,7 @@
 // Maybe incoming: $live_mode, $hide_quota
 
 if ( isset( $destination['disabled'] ) && ( '1' == $destination['disabled'] ) ) {
-	die( __( 'This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.', 'it-l10n-backupbuddy' ) );
+	die( __( '<span class="description">This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.</span>', 'it-l10n-backupbuddy' ) );
 }
 
 if ( ! isset( $destination_id ) ) {
@@ -205,7 +205,7 @@ if ( 'live' == $destination['type'] ) {
 */
 
 if ( 'live' == $destination['type'] ) {
-	$backup_title = __( 'Remote Snapshot Files', 'it-l10n-backupbuddy' );
+	$backup_title = __( 'Snapshots Stored Remotely on Stash Live Servers', 'it-l10n-backupbuddy' );
 } else {
 	$backup_title = __( 'Stash Traditional Backup Files', 'it-l10n-backupbuddy' );
 }

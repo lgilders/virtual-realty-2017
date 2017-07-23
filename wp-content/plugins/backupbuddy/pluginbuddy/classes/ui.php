@@ -75,8 +75,11 @@ class pb_backupbuddy_ui {
 	 *	@param		boolean		$echo		Whether or not to echo the string or return.
 	 *	@return		null/string				Returns null if $echo is true; else returns string with HTML.
 	 */
-	public function title( $title, $echo = true ) {
-		$return = '<h1><span class="backupbuddy-icon-drive" style="font-size: 1.2em; vertical-align: -4px;"></span> ' . $title . '</h1><br />';
+	public function title( $title, $echo = true, $br = true ) {
+		$return = '<h1 style="zoom: 1.05;"><span class="backupbuddy-icon-drive" style="font-size: 1.2em; vertical-align: -4px;"></span> ' . $title . '</h1>';
+		if ( true === $br ) {
+			$return .= '<br />';
+		}
 		if ( $echo === true ) {
 			echo $return;
 		} else {
@@ -290,7 +293,7 @@ class pb_backupbuddy_ui {
 				
 				echo '<a href="' . $hover_link . '" class="pb_' . pb_backupbuddy::settings( 'slug' ) . '_hoveraction_' . $action_slug . '" rel="' . $hover_action_column_value . '">' . $action_title . '</a>';
 				if ( $i < count( $settings['hover_actions'] ) ) {
-					echo ' &nbsp;|&nbsp; ';
+					echo ' | ';
 				}
 			}
 			echo '			</div>
@@ -441,7 +444,7 @@ class pb_backupbuddy_ui {
 	public function alert( $message, $error = false, $error_code = '', $rel_tag = '', $more_css = '' ) {
 		$log_error = false;
 
-		echo '<div id="message" style="padding: 9px; ' . $more_css . '" rel="' . $rel_tag . '" class="pb_backupbuddy_alert ';
+		echo '<div id="message" style="' . $more_css . '" rel="' . $rel_tag . '" class="pb_backupbuddy_alert ';
 		if ( $error === false ) {
 			echo 'updated fade';
 		} else {
@@ -473,7 +476,7 @@ class pb_backupbuddy_ui {
 	public function disalert( $unique_id, $message, $error = false, $more_css = '' ) {
 		
 		if ( ( '' == $unique_id ) || ( ! isset( pb_backupbuddy::$options['disalerts'][$unique_id] ) ) ) {
-			$message = '<a style="float: right;" class="pb_backupbuddy_disalert" href="javascript:void(0);" title="' . __( 'Dismiss this alert. Unhide dismissed alerts on the Settings page.', 'it-l10n-backupbuddy' ) . '" alt="' . pb_backupbuddy::ajax_url( 'disalert' ) . '"><b>' . __( 'Dismiss', 'it-l10n-backupbuddy' ) . '</b></a><div style="margin-right: 60px;">' . $message . '</div>';
+			$message = '<a style="float: right;" class="pb_backupbuddy_disalert" href="javascript:void(0);" title="' . __( 'Dismiss this alert. Unhide dismissed alerts on the Settings page.', 'it-l10n-backupbuddy' ) . '" alt="' . pb_backupbuddy::ajax_url( 'disalert' ) . '"><b>' . __( 'Dismiss', 'it-l10n-backupbuddy' ) . '</b></a><div style="margin-right: 120px;">' . $message . '</div>';
 			$this->alert( $message, $error, '', $unique_id, $more_css );
 		} else {
 			echo '<!-- Previously Dismissed Alert: `' . htmlentities( $message ) . '` -->';
@@ -733,13 +736,13 @@ class pb_backupbuddy_ui {
 		
 		//echo '<link rel="stylesheet" href="' . pb_backupbuddy::plugin_url(); . '/css/admin.css" type="text/css" media="all" />';
 		pb_backupbuddy::load_script( 'admin.js', true );
-		pb_backupbuddy::load_style( 'admin.css', true );
+		pb_backupbuddy::load_style( 'admin.css' );
 		pb_backupbuddy::load_script( 'jquery-ui-tooltip', false );
 		pb_backupbuddy::load_style( 'jQuery-ui-1.11.2.css', true );
 		
 		echo '<body class="wp-core-ui" style="background: inherit;">';
 		if ( $padding === true ) {
-			echo '<div style="padding: 12px; padding-left: 20px; padding-right: 20px; overflow: scroll;">';
+			echo '<div class="bb-iframe-divpadding-noscroll" style="padding: 12px; padding-left: 20px; padding-right: 20px; overflow: scroll;">';
 		} else {
 			echo '<div>';
 		}

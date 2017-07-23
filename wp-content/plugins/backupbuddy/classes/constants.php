@@ -26,7 +26,7 @@ class backupbuddy_constants {
 	
 	// Live
 	const MINIMUM_TIME_BETWEEN_ACTIVITY_AND_PERIODIC_CRON_RUN = 1800; // [30min] Minimum amount of time to allow between the last_activity state key and restarting the periodic process via cron.
-	const TIMED_OUT_PROCESS_RESUME_WIGGLE_ROOM = 60; // The number of seconds added to the backupbuddy_core::detectLikelyHighestExecutionTime() after which we MAY restart the periodic process assuming it timed out. This happens in live_stats.php AJAX if a user is on the Live page and also is used for the fileoptions lock ignoring value.
+	const TIMED_OUT_PROCESS_RESUME_WIGGLE_ROOM = 30; // The number of seconds added to the backupbuddy_core::detectLikelyHighestExecutionTime() after which we MAY restart the periodic process assuming it timed out. This happens in live_stats.php AJAX if a user is on the Live page and also is used for the fileoptions lock ignoring value.
 	const DAYS_BEFORE_RUNNING_TROUBLESHOOTING_TEST = 3; // After this many days with no snapshot run the troubleshooting script to possibly pop up alert of issues on live page.
 	const MAX_TIME_BETWEEN_CATALOG_BACKUP = 90; // Make sure backed up at least every X seconds max (ONLY when running periodic functions; not always running).
 	
@@ -41,6 +41,8 @@ class backupbuddy_constants {
 	const BACKUP_STATUS_BOX_LIMIT_OPTION_LINES = 100; // If limiting the status box is enabled, number of lines to limit to.
 	const BACKUP_STATUS_FILEOPTIONS_WAIT_COUNT_LIMIT = 10; // Max number of times to wait for a fileoptions file to become viable. Eg a valid array inside when checking the backup status.
 	public static $HARDCODED_DIR_EXCLUSIONS = array( // Directories to exclude from all backups (traditional & Live).
+		'/importbuddy/',
+		'/importbuddy.php',
 		'/.sucuriquarantine/', // Infected files.
 		'/wp-content/uploads/sucuri/', // Temp files such as IP bans.
 		'/wp-content/envato-backups/', // Don't backup backups of other plugins.
@@ -51,10 +53,19 @@ class backupbuddy_constants {
 		'/wp-content/plugins/wordfence/tmp/', // Temporary wordfence data.
 		'/wp-content/cache/supercache/', // WP Super Cache temp data.
 		'/error_log', // Can be very large; server-specific and unlikely to need.
+		'/wp-content/cache/',
+		'/wp-content/mysql.sql',
+		'/wp-content/wfcache/',
+		'/wp-admin/error_log',
+		'/logs/',
+		'/wp-content/mysql.sql', // WPEngine's stuff.
+		'/_wpeprivate/', // WPEngine's stuff.
+		'/wp-content/updraft/', // Updraft stuff.
 	);
 	
 	// Remote Sends
 	const REMOTE_SEND_MAX_TIME_SINCE_START_TO_BAIL = 2592000; // 30 days. If this amount of time passed since the START of a remote send to consider bailing when retrying. This is basically a failsafe of the retry count fails and it keeps trying to send retries indefinitely. Only a failsafe.
+	const RECENT_SENDS_MAX_LISTING_COUNT = 100; // Only show the most recent X sends on the Remote Destinations Recent Sends listing table.
 	
 	// PHP date() timestamp format for the backup archive filename. DATE is default.
 	const ARCHIVE_NAME_FORMAT_DATE = 'Y_m_d';				// Format when archive_name_format = date.

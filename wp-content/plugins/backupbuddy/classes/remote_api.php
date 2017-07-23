@@ -494,7 +494,6 @@ class backupbuddy_remote_api {
 		// Delete existing directory for some types of transfers.
 		
 		if ( ( 0 == $seekTo ) && ( file_exists( $saveFile ) ) ) { // New file transfer only. Do not delete existing file if chunking.
-			//error_log( 'zeroseekmoose' . $saveFile );
 			if ( true !== @unlink( $saveFile ) ) {
 				$message = 'Error #238722: Unable to delete existing file `' . $saveFile . '`.';
 				pb_backupbuddy::status( 'error', $message );

@@ -16,6 +16,10 @@ if ( ! defined( 'PB_IMPORTBUDDY' ) || ( true !== PB_IMPORTBUDDY ) ) {
 		
 		<link rel="icon" type="image/png" href="importbuddy/images/favicon.png">
 		<script type="text/javascript">
+			window.onerror=function( errorMsg, url, lineNumber, colNumber, error ){
+				alert( "Error #439743: A javascript error occurred which MAY prevent the restore from continuing. _IF_ the process lets you proceed then ignore this message. Check the Status Log or browser error console for trace details.\n\nMessage: `" + errorMsg + "`.\nURL: `" + url + "`.\nLine: `" + lineNumber + "`" );
+				backupbuddy_log( 'Javascript Error. Message: `' + errorMsg + '`, URL: `' + url + '`, Line: `' + lineNumber + '`, Col: `' + colNumber + '`, Trace: `' + error.stack + '`.' ); // Attempt to log.
+			}
 			
 			var statusBox; // Make global.
 			var backupbuddy_errors_encountered = 0; // number of errors sent via log.
@@ -214,21 +218,21 @@ if ( ! defined( 'PB_IMPORTBUDDY' ) || ( true !== PB_IMPORTBUDDY ) ) {
 				} else if ( 'importingTable' == action ) {
 					jQuery('#importingDatabase-progressMessage').text( 'Restoring ' + note + ' ...' ); // note contains table name
 				} else if ( 'databaseRestoreSuccess' == action ) {
-					jQuery('#importingDatabase-progressMessage').text( 'Database Restore Successful' );
+					jQuery('#importingDatabase-progressMessage').text( 'Database Restore Successful' ).addClass( 'animated fadeInDown' );
 				} else if ( 'databaseRestoreSkipped' == action ) {
-					jQuery('#importingDatabase-progressMessage').text( 'Database Restore Skipped' );
+					jQuery('#importingDatabase-progressMessage').text( 'Database Restore Skipped' ).addClass( 'animated swing' );
 				} else if ( 'databaseRestoreFailed' == action ) {
-					jQuery('#importingDatabase-progressMessage').text( 'Database Restore Failed' );
+					jQuery('#importingDatabase-progressMessage').text( 'Database Restore Failed' ).addClass( 'animated wobble' );
 				} else if ( 'databaseMigrationSuccess' == action ) {
-					jQuery('#migratingDatabase-progressMessage').text( 'Database Migration Successful' );
+					jQuery('#migratingDatabase-progressMessage').text( 'Database Migration Successful' ).addClass( 'animated fadeInDown' );
 				} else if ( 'databaseMigrationSkipped' == action ) {
-					jQuery('#migratingDatabase-progressMessage').text( 'Database Migration Skipped' );
+					jQuery('#migratingDatabase-progressMessage').text( 'Database Migration Skipped' ).addClass( 'animated swing' );
 				} else if ( 'databaseMigrationFailed' == action ) {
-					jQuery('#migratingDatabase-progressMessage').text( 'Database Migration Failed' );
+					jQuery('#migratingDatabase-progressMessage').text( 'Database Migration Failed' ).addClass( 'animated wobble' );
 				} else if ( 'filesRestoreSuccess' == action ) {
-					jQuery('#unzippingFiles-progressMessage').text( 'Completed Restoring Files' );
+					jQuery('#unzippingFiles-progressMessage').text( 'Completed Restoring Files' ).addClass( 'animated fadeInDown' );
 				} else if ( 'filesRestoreSkipped' == action ) {
-					jQuery('#unzippingFiles-progressMessage').text( 'Skipped Restoring Files' );
+					jQuery('#unzippingFiles-progressMessage').text( 'Skipped Restoring Files' ).addClass( 'animated swing' );
 				} else {
 					console.log( 'Unknown JS bb_action `' + action + '` with note `' + note + '`.' );
 				}

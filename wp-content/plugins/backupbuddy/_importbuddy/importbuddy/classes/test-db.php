@@ -124,11 +124,11 @@ class importbuddy_test_db{
 		require_once( ABSPATH . 'importbuddy/classes/wp-db.php' );
 		global $wpdb;
 		$this->wpdb = new wpdb( $this->creds['username'], $this->creds['password'], $this->creds['database'], $this->creds['server'] );
-		if ( false === $this->wpdb->dbh ) {
+		if ( ( false === $this->wpdb->dbh ) || ( null === $this->wpdb->dbh ) ){
 			if ( empty( $this->wpdb->use_mysqli ) ) {
-				$mysql_error = mysql_error();
+				$mysql_error = @mysql_error( $this->wpdb->dbh );
 			} else {
-				$mysql_error = mysqli_error();
+				$mysql_error = @mysqli_error( $this->wpdb->dbh );
 			}
 			$this->tests['connect_error'] = 'Unable to connect to database server and/or select the database. Details: `' . $mysql_error . '`.';
 			die( json_encode( $this->tests ) );

@@ -118,6 +118,20 @@ $settings_form->add_setting( array(
 ) );
 
 $settings_form->add_setting( array(
+	'type'		=>		'select',
+	'name'		=>		'storage',
+	'title'		=>		__( 'Storage Class', 'it-l10n-backupbuddy' ),
+	'options'	=>		array(
+								'STANDARD'				=>		'Standard Storage [default] 99.999999999% durability &nbsp;|&nbsp; 99.99% availability',
+								'REDUCED_REDUNDANCY'		=>		'Reduced Redundancy &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 99.99% durability &nbsp;|&nbsp; 99.99% availability (less cost, less robust)',
+								'STANDARD_IA'				=>		'Infrequent Access &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 99.999999999% durability &nbsp;|&nbsp; &nbsp;&nbsp;99.9% availability (less storage cost, fee to restore)',
+								'GLACIER'					=>		'Glacier &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 99.999999999% durability &nbsp;|&nbsp; &nbsp;&nbsp;99.9% availability (less cost, slow restore)',
+							),
+	'tip'		=>		__('[Default: Standard Storage] - Determines the type of storage to use when placing this file on Amazon S3. Reduced redundancy offers less protection against loss but costs less. Infrequent access is cheaper for storage but requires a fee for retrieval. Glacier is cheaper for storage but requires a very slow restore before files are accessible. See Amazon for for details.', 'it-l10n-backupbuddy' ),
+	'rules'		=>		'required',
+) );
+
+$settings_form->add_setting( array(
 	'type'		=>		'text',
 	'name'		=>		'directory',
 	'title'		=>		__( 'Directory (optional)', 'it-l10n-backupbuddy' ),
@@ -145,15 +159,44 @@ $settings_form->add_setting( array(
 	'css'		=>		'width: 50px;',
 	'after'		=>		' backups',
 ) );
+
+$settings_form->add_setting( array(
+	'type'		=>		'text',
+	'name'		=>		'themes_archive_limit',
+	'title'		=>		__( 'Themes only limit', 'it-l10n-backupbuddy' ),
+	'tip'		=>		__( '[Example: 5] - Enter 0 for no limit. This is the maximum number of this type of archive to be stored in this specific destination. If this limit is met the oldest backup of this type will be deleted.', 'it-l10n-backupbuddy' ),
+	'rules'		=>		'int[0-9999999]',
+	'css'		=>		'width: 50px;',
+	'after'		=>		' backups. &nbsp;<span class="description">0 or blank for no limit.</span>',
+) );
+$settings_form->add_setting( array(
+	'type'		=>		'text',
+	'name'		=>		'plugins_archive_limit',
+	'title'		=>		__( 'Plugins only limit', 'it-l10n-backupbuddy' ),
+	'tip'		=>		__( '[Example: 5] - Enter 0 for no limit. This is the maximum number of this type of archive to be stored in this specific destination. If this limit is met the oldest backup of this type will be deleted.', 'it-l10n-backupbuddy' ),
+	'rules'		=>		'int[0-9999999]',
+	'css'		=>		'width: 50px;',
+	'after'		=>		' backups. &nbsp;<span class="description">0 or blank for no limit.</span>',
+) );
+$settings_form->add_setting( array(
+	'type'		=>		'text',
+	'name'		=>		'media_archive_limit',
+	'title'		=>		__( 'Media only limit', 'it-l10n-backupbuddy' ),
+	'tip'		=>		__( '[Example: 5] - Enter 0 for no limit. This is the maximum number of this type of archive to be stored in this specific destination. If this limit is met the oldest backup of this type will be deleted.', 'it-l10n-backupbuddy' ),
+	'rules'		=>		'int[0-9999999]',
+	'css'		=>		'width: 50px;',
+	'after'		=>		' backups. &nbsp;<span class="description">0 or blank for no limit.</span>',
+) );
 $settings_form->add_setting( array(
 	'type'		=>		'text',
 	'name'		=>		'files_archive_limit',
 	'title'		=>		__( 'Files only limit', 'it-l10n-backupbuddy' ),
-	'tip'		=>		__( '[Example: 5] - Enter 0 for no limit. This is the maximum number of Files Only backup archives for this site (based on filename) to be stored in this specific destination. If this limit is met the oldest backup of this type will be deleted.', 'it-l10n-backupbuddy' ),
-	'rules'		=>		'required|int[0-9999999]',
+	'tip'		=>		__( '[Example: 5] - Enter 0 for no limit. This is the maximum number of this type of archive to be stored in this specific destination. If this limit is met the oldest backup of this type will be deleted.', 'it-l10n-backupbuddy' ),
+	'rules'		=>		'int[0-9999999]',
 	'css'		=>		'width: 50px;',
-	'after'		=>		' backups',
+	'after'		=>		' backups. &nbsp;<span class="description">0 or blank for no limit.</span>',
 ) );
+
 $settings_form->add_setting( array(
 	'type'		=>		'checkbox',
 	'name'		=>		'accelerate',

@@ -63,7 +63,7 @@
 			jQuery( '#db_test_container' ).text('').hide();
 			
 			if ( ( '' == jQuery('#mysql_server').val() ) || ( '' == jQuery('#mysql_database').val() ) || ( '' == jQuery('#mysql_username').val() ) || ( '' == jQuery('#mysql_prefix').val() ) ) {
-				jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning">Missing Fields</span> All database settings (except optional password) are required and must be entered to continue.' ).show();
+				jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning  animated infinite tada">Missing Fields</span> &nbsp;&nbsp; All database settings (except optional password) are required and must be entered to continue.' ).show();
 				jQuery('.pb_database_next_test').addClass( 'it-attention' );
 				return false;
 			}
@@ -124,7 +124,7 @@
 						
 						// OVERALL ERROR
 						if ( '' != response.overall_error ) {
-							jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning">Error</span> ' + response.overall_error ).show();
+							jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning animated infinite tada">Error</span> &nbsp;&nbsp; ' + response.overall_error ).show();
 							jQuery('.pb_database_next_test').addClass( 'it-attention' );
 							return false;
 						}
@@ -133,25 +133,25 @@
 						// ERRORS
 						if ( false === response.connect ) {
 							jQuery( '#mysql_server,#mysql_username,#mysql_password' ).addClass( 'input-attention' );
-							jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning">Database Error</span> Unable to connect / authenticate to MySQL server. ' + response.connect_error ).show();
+							jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning animated infinite tada">Database Error</span> &nbsp;&nbsp; Unable to connect / authenticate to MySQL server. ' + response.connect_error ).show();
 							jQuery('.pb_database_next_test').addClass( 'it-attention' );
 							return false;
 						}
 						
 						if ( false === response.selectdb ) {
 							jQuery( '#mysql_database' ).addClass( 'input-attention' );
-							jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning">Database Error</span> Unable to select database. Verify the database exists & the user was granted ALL privileges. ' + response.selectdb_error ).show();
+							jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning animated infinite tada">Database Error</span> &nbsp;&nbsp; Unable to select database. Verify the database exists & the user was granted ALL privileges. ' + response.selectdb_error ).show();
 							jQuery('.pb_database_next_test').addClass( 'it-attention' );
 							return false;
 						}
 						
 						if ( false === response.createdroptable ) {
-							jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning">Database Error</span> Unable to create & drop test table. Verify the entered user has ALL privileges for the specified database. ' + response.createdroptable_error ).show();
+							jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning animated infinite tada">Database Error</span> &nbsp;&nbsp; Unable to create & drop test table. Verify the entered user has ALL privileges for the specified database. ' + response.createdroptable_error ).show();
 							jQuery('.pb_database_next_test').addClass( 'it-attention' );
 							return false;
 						}
 						if ( false === response.prefix ) {
-							jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning">Database Error</span> The specified prefix does not the bare minimum criteria for WordPress. It should be in the format of letters (or numbers, but not at the beginning) followed by an underscore. <b>Either change the prefix or select to ignore this warning below to proceed.</b> Examples: wp_, wp2_, mywordpress_, dustins2ndblog_' ).show();
+							jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning animated infinite tada">Database Error</span> &nbsp;&nbsp; The specified prefix does not the bare minimum criteria for WordPress. It should be in the format of letters (or numbers, but not at the beginning) followed by an underscore. <b>Either change the prefix or select to ignore this warning below to proceed.</b> Examples: wp_, wp2_, mywordpress_, dustins2ndblog_' ).show();
 							jQuery( '#db_wipe_options' ).show();
 							jQuery('.pb_database_next_test').addClass( 'it-attention' );
 							return false;
@@ -164,7 +164,7 @@
 						
 						if ( ( true === response.prefix_warn ) && ( true === window.restoreData.restoreDatabase ) ) {
 							if ( !prefix_warn_ignore ) {
-								jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning">Database Warning</span> A prefix in the format of alphanumeric characters followed by an underscore is <b>highly recommended</b> to conform to WordPress & BackupBuddy conventions & expectations. This may also cause warnings of tables already existing that do not. <b>Either change the prefix or select to ignore this warning below to proceed.</b> Examples: wp_, wp2_, mywordpress_, dustins2ndblog_' ).show();
+								jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning animated infinite tada">Database Warning</span> &nbsp;&nbsp; A prefix in the format of alphanumeric characters followed by an underscore is <b>highly recommended</b> to conform to WordPress & BackupBuddy conventions & expectations. This may also cause warnings of tables already existing that do not. <b>Either change the prefix or select to ignore this warning below to proceed.</b> Examples: wp_, wp2_, mywordpress_, dustins2ndblog_' ).show();
 								jQuery( '#db_wipe_options' ).show();
 								jQuery( '#ignore_prefix_warnings' ).show();
 								jQuery('.pb_database_next_test').addClass( 'it-attention' );
@@ -178,10 +178,10 @@
 						// Prefix exists.
 						if(  ( true === response.prefix_exists ) && ( true === window.restoreData.restoreDatabase ) ) {
 							if ( ( ! jQuery( '#wipe_prefix').is( ':checked' ) ) && ( ! jQuery( '#wipe_database').is( ':checked' ) ) ) {
-								jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning">Database Warning</span> The specified prefix appears to already exist in this database. Restoring may overwrite existing WordPress data. <b>Change the prefix, select to delete existing tables below, or use the advanced option to ignore SQL errors to proceed.</b>' ).show();
+								jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning animated infinite tada">Database Warning</span> &nbsp;&nbsp; The specified prefix appears to already exist in this database. Restoring may overwrite existing WordPress data. <b>Change the prefix, select to delete existing tables below, or use the advanced option to ignore SQL errors to proceed.</b>' ).show();
 								jQuery( '#db_wipe_options' ).show();
 								if (  jQuery('#ignore_sql_errors').is( ':checked' ) ) {
-									jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning">Database Warning</span> The specified prefix appears to already exist in this database. However, the advanced option to ignore existing tables & SQL errors was selected. Use extreme caution.' ).show();
+									jQuery( '#db_test_container' ).html( '<span class="pb_label pb_label-warning animated infinite tada">Database Warning</span> &nbsp;&nbsp; The specified prefix appears to already exist in this database. However, the advanced option to ignore existing tables & SQL errors was selected. Use extreme caution.' ).show();
 								} else {
 									jQuery('.pb_database_next_test').addClass( 'it-attention' );
 									return false;
@@ -420,7 +420,16 @@
 		
 		
 		<div style="margin-top: 35px; margin-bottom: 35px; text-align: center;">
-			<div id="db_test_container" style="display: none; margin-bottom: 25px; padding: 25px; text-align: left;" class="round-wrap">
+			<div id="db_test_container" style="display: none; margin-bottom: 0; padding: 25px; text-align: left;" class="round-wrap">
+			</div>
+			
+			<div id="ignore_prefix_warnings" style="display: none; margin-bottom: 25px;">
+				<b>Ignore prefix warnings?</b>
+				&nbsp;&nbsp;
+				<label>
+					<input class="db_setting" type="checkbox" name="ignore_dbtest_warnings" id="ignore_prefix_warnings_checkbox" value="1">
+					Yes, proceed with this prefix.
+				</label>
 			</div>
 
 
@@ -444,14 +453,7 @@
 				</label>
 			</div>
 	
-			<div id="ignore_prefix_warnings" style="display: none;">
-				<b>Ignore prefix warnings?</b>
-				&nbsp;&nbsp;
-				<label>
-					<input class="db_setting" type="checkbox" name="ignore_dbtest_warnings" id="ignore_prefix_warnings_checkbox" value="1">
-					Yes, proceed with this prefix.
-				</label>
-			</div>
+			
 	
 	
 	

@@ -8,7 +8,7 @@ class pb_backupbuddy_destination_stash3 { // Change class name end to match dest
 	const API_URL = 'https://stash-api.ithemes.com';
 	
 	public static $destination_info = array(
-		'name'			=>		'BackupBuddy Stash (v3) - BETA',
+		'name'			=>		'BackupBuddy Stash (v3)',
 		'description'	=>		'<b>The easiest of all destinations</b> for PHP v5.5+; just enter your iThemes login and Stash away! Store your backups in the BackupBuddy cloud safely with high redundancy and encrypted storage.  Supports multipart uploads for larger file support with both bursting and chunking. Active BackupBuddy customers receive <b>free</b> storage! Additional storage upgrades optionally available. <a href="http://ithemes.com/backupbuddy-stash/" target="_blank">Learn more here.</a>',
 		'category'		=>		'normal', // best, normal, legacy
 	);
@@ -30,7 +30,10 @@ class pb_backupbuddy_destination_stash3 { // Change class name end to match dest
 		
 		'db_archive_limit'			=>		'0',		// Maximum number of db backups for this site in this directory for this account. No limit if zero 0.
 		'full_archive_limit' 		=>		'0',		// Maximum number of full backups for this site in this directory for this account. No limit if zero 0.
-		//'files_archive_limit' 		=>		'0',		// Maximum number of files only backups for this site in this directory for this account. No limit if zero 0.
+		'themes_archive_limit' 		=>		'0',
+		'plugins_archive_limit' 		=>		'0',
+		'media_archive_limit' 		=>		'0',
+		'files_archive_limit' 		=>		'0',
 		
 		'manage_all_files'			=>		'0',		// Allow user to manage all files in Stash? If enabled then user can view all files after entering their password. If disabled the link to view all is hidden.
 		'disable_file_management'	=>		'0',		// When 1, _manage.php will not load which renders remote file management DISABLED.
@@ -215,7 +218,7 @@ class pb_backupbuddy_destination_stash3 { // Change class name end to match dest
 			if ( null !== ( $response_decoded = json_decode( $response['body'], true  ) ) ) {
 				if ( ( false === $passthru_errors ) && ( isset( $response_decoded['error'] ) ) ) {
 					if ( isset( $response_decoded['error']['message'] ) ) {
-						$error = 'Error #39752893. Server reported an error performing action `' . $action . '` with additional params: `' . print_r( $additionalParams, true ) . '`. Body Details: `' . print_r( $response_decoded['error'], true ) . '`. Response Details: `' . print_r( $response['response'], true ) . '`.';
+						$error = 'Error #39752893c. Server reported an error performing action `' . $action . '` with additional params: `' . print_r( $additionalParams, true ) . '`. Body Details: `' . print_r( $response_decoded['error'], true ) . '`. Response Details: `' . print_r( $response['response'], true ) . '`.';
 						self::_error( $error );
 						return $response_decoded['error']['message'];
 					} else {
@@ -524,6 +527,10 @@ class pb_backupbuddy_destination_stash3 { // Change class name end to match dest
 			'types' => array(
 						'db' => $settings['db_archive_limit'],
 						'full' => $settings['full_archive_limit'],
+						'themes' => $settings['themes_archive_limit'],
+						'plugins' => $settings['plugins_archive_limit'],
+						'media' => $settings['media_archive_limit'],
+						'files' => $settings['files_archive_limit'],
 						),
 			'delete' => true,
 		);
@@ -542,81 +549,6 @@ class pb_backupbuddy_destination_stash3 { // Change class name end to match dest
 		}
 		
 		return true;
-		
-		/*
-		if ( $backup_type == 'full' ) {
-			$limit = $settings['full_archive_limit'];
-			pb_backupbuddy::status( 'details', 'Full backup archive limit of `' . $limit . '` of type `full` based on destination settings.' );
-		} elseif ( $backup_type == 'db' ) {
-			$limit = $settings['db_archive_limit'];
-			pb_backupbuddy::status( 'details', 'Database backup archive limit of `' . $limit . '` of type `db` based on destination settings.' );
-		} elseif ( $backup_type == 'files' ) {
-			$limit = $settings['files_archive_limit'];
-			pb_backupbuddy::status( 'details', 'Database backup archive limit of `' . $limit . '` of type `files` based on destination settings.' );
-		} else {
-			$limit = 0;
-			pb_backupbuddy::status( 'warning', 'Warning #237332. Unable to determine backup type (reported: `' . $backup_type . '`) so archive limits NOT enforced for this backup.' );
-		}
-		if ( ( '' != $limit ) && ( $limit > 0 ) ) {
-			
-			pb_backupbuddy::status( 'details', 'Archive limit enforcement beginning.' );
-			
-			// Get file listing.
-			$files = self::listFiles( $settings, $prefix = '' );
-			if ( ! is_array( $files ) ) {
-				pb_backupbuddy::status( 'Error #3892383: Unable to list files. Skipping archive limiting.' );
-				return false;
-			}
-			$remotePath = 'backup-' . backupbuddy_core::backup_prefix();
-			$prefixLen = strlen( backupbuddy_core::backup_prefix() );
-			
-			// List backups associated with this site by date.
-			$backups = array();
-			foreach( $files as $file ) {
-				if ( $file['backup_type'] != $backup_type ) {
-					continue;
-				}
-				if ( ! backupbuddy_core::startsWith( basename( $file['filename'] ), $remotePath ) ) { // Only show backups for this site unless set to show all.
-					continue;
-				}
-				
-				$backups[ $file['filename'] ] = $file['uploaded_timestamp'];
-			}
-			unset( $files );
-			arsort( $backups );
-			
-			pb_backupbuddy::status( 'details', 'Found `' . count( $backups ) . '` backups of this type when checking archive limits.' );
-			if ( ( count( $backups ) ) > $limit ) {
-				pb_backupbuddy::status( 'details', 'More archives (' . count( $backups ) . ') than limit (' . $limit . ') allows. Trimming...' );
-				$i = 0;
-				$delete_fail_count = 0;
-				foreach( $backups as $buname => $butime ) {
-					$i++;
-					if ( $i > $limit ) {
-						pb_backupbuddy::status( 'details', 'Trimming excess file `' . $buname . '`...' );
-						$delete_response = self::deleteFile( $settings, substr( $buname, $prefixLen + 1 ) );
-						if ( true !== $delete_response ) {
-							self::_error( 'Unable to delete excess Stash file `' . $buname . '`. Details: `' . $delete_response . '`.' );
-							$delete_fail_count++;
-						}
-					}
-				} // end foreach.
-				pb_backupbuddy::status( 'details', 'Finished trimming excess backups.' );
-				if ( $delete_fail_count !== 0 ) {
-					$error_message = 'Stash remote limit could not delete ' . $delete_fail_count . ' backups.';
-					pb_backupbuddy::status( 'error', $error_message );
-					backupbuddy_core::mail_error( $error_message );
-				}
-			}
-			
-			pb_backupbuddy::status( 'details', 'Stash completed archive limiting.' );
-			
-		} else {
-			pb_backupbuddy::status( 'details',  'No Stash archive file limit to enforce.' );
-		} // End remote backup limit
-		
-		return true;
-		*/
 		
 	} // End archiveLimit();
 	

@@ -4,7 +4,7 @@
  *	Plugin Name: BackupBuddy
  *	Plugin URI: http://ithemes.com/purchase/backupbuddy/
  *	Description: The most complete WordPress solution for Backup, Restoration, Migration, and Deployment. Backs up a customizable selection of files, settings, and content for a complete snapshot of your site. Restore, migrate, or deploy your site to a new host or new domain with complete ease-of-mind. Stash Live feature allows for real-time live backups into the cloud.
- *	Version: 7.3.1.2
+ *	Version: 8.0.1.5
  *	Author: iThemes
  *	Author URI: http://ithemes.com/
  *	iThemes Package: backupbuddy
@@ -39,7 +39,7 @@ $pluginbuddy_settings = array(
 				'slug'			=>		'backupbuddy',
 				'series'			=>		'',
 				'default_options'	=>		array(
-												'data_version'						=>		'15',				// Data structure version. Added BB 2.0 to ease updating.												
+												'data_version'						=>		'17',				// Data structure version. Added BB 2.0 to ease updating.												
 												'importbuddy_pass_hash'				=>		'',					// ImportBuddy password hash.
 												'importbuddy_pass_length'			=>		0,					// Length of the ImportBuddy password before it was hashed.
 												'backup_reminders'					=>		1,					// Remind to backup after post, pre-upgrade, etc.
@@ -77,21 +77,20 @@ $pluginbuddy_settings = array(
 												'email_notify_send_finish_subject'         => 'BackupBuddy File Send Finished - {home_url}',
 												'email_notify_send_finish_body'            => "A destination file send of file {backup_file} has finished with BackupBuddy v{backupbuddy_version} on {current_datetime} for the site {home_url}.\n\nDetails:\r\n\r\n{message}",
 												'email_notify_error'                       => '',				// Email address(es) to send to when an error is encountered.
-												'email_notify_error_subject'               => 'BackupBuddy Error - {home_url}',
-												'email_notify_error_body'                  => "An error occurred with BackupBuddy v{backupbuddy_version} on {current_datetime} for the site {home_url}. Error details:\r\n\r\n{message}",
+												'email_notify_error_subject'               => 'BackupBuddy Server Error - {home_url}',
+												'email_notify_error_body'                  => "BackupBuddy v{backupbuddy_version} encountered a server error on {current_datetime} for the site {home_url}. Error details:\r\n\r\n{message}",
 												'email_return'                             => '',				// Return email address for emails sent. Defaults to admin email if none specified.
 												
 												'remote_destinations'				=>		array(),			// Array of remote destinations (S3, Rackspace, email, ftp, etc)
-												'remote_send_timeout_retries'		=>		'1',					// Number of times to attempt to resend timed out remote destination. IMPORTANT: Currently only permits values or 1 or 0. 1 max tries.
+												'remote_send_timeout_retries'			=>		'1',					// Number of times to attempt to resend timed out remote destination. IMPORTANT: Currently only permits values or 1 or 0. 1 max tries.
 												'role_access'						=>		'activate_plugins',	// Default role access to the plugin.
 												'dropboxtemptoken'					=>		'',					// Temporary Dropbox token for oauth.
-												'backup_mode'						=>		'2',				// 1 = 1.x, 2 = 2.x mode
 												'multisite_export'					=>		'0',				// Allow individual sites to be exported by admins of said subsite? (Network Admins can always export individual sites).
 												'backup_directory'					=>		'',					// Custom backup directory to store all archives in. BLANK for default.
 												'temp_directory'					=>		'',					// Custom temporary directory to use for writing into. BLANK for default.
-												'log_directory'						=>		'',					// Custom log directory. Also holds fileoptions. BLANK for default.
+												'log_directory'					=>		'',					// Custom log directory. Also holds fileoptions. BLANK for default.
 												'log_serial'						=>		'',					// Current log serial to send all output to. Used during backups.
-												'notifications'						=>		array(),			// TODO: currently not used.
+												'notifications'					=>		array(),			// TODO: currently not used.
 												'zip_method_strategy'				=>		'1',				// 0 = Not Set, 1 = Best Available, 2 = All Available, 3 = Force Compatibility.
 												'database_method_strategy'			=>		'php',				// php, mysqldump, all
 												'alternative_zip_2'					=>		'0',				// Alternative zip system (Jeremy).
@@ -99,24 +98,25 @@ $pluginbuddy_settings = array(
 												'ignore_zip_symlinks'				=>		'1',				// When enabled (1) zip will not-follow (zip utility) or ignore (pclzip) any symbolic links
 												'zip_build_strategy'				=>		'3',				// 0 = Not Set, 1 = Reserved, 2 = Single-Burst/Single-Step, 3 = Multi-Burst/Single-Step (Default), 4 = Multi-Burst/Multi-Step.
 												'zip_step_period'					=>		'30',				// Zip build threshold period, at expiry will start new step. Empty for default of 30s. 0 for infinite.
-												'zip_burst_gap'						=>		'2',				// Zip build interburst gap. Empty for default of 2s
+												'zip_burst_gap'					=>		'2',				// Zip build interburst gap. Empty for default of 2s
 												'zip_min_burst_content'				=>		'10',				// Zip build minimum burst content size (MB). Empty for 10MB default. 0 for unlimited.
 												'zip_max_burst_content'				=>		'100',				// Zip build maximum burst content size (MB). Empty for 100MB default. 0 for unlimited.
 												'disable_zipmethod_caching'			=>		'0',				// When enabled the available zip methods are not cached. Useful for always showing the test for debugging or customer logging purposes for support.
 												'archive_name_format'				=>		'datetime',			// Valid options: date, datetime
 												'archive_name_profile'				=>		'0',	      		// Valid options: 0, 1. Displays profile name in backup archive filename.
-												'disable_https_local_ssl_verify'	=>		'0',				// When enabled (1) disabled WordPress from verifying SSL certificates for loopbacks, etc.
+												'disable_https_local_ssl_verify'		=>		'0',				// When enabled (1) disabled WordPress from verifying SSL certificates for loopbacks, etc.
 												'save_comment_meta'					=>		'1',				// When enabled (1) meta data will not be stored in backups during creation.
-												'ignore_command_length_check'		=>		'0',				// When enabled, the command line length result provided by the OS will be ignored. Sometimes we cannot reliably get it.
+												'ignore_command_length_check'			=>		'0',				// When enabled, the command line length result provided by the OS will be ignored. Sometimes we cannot reliably get it.
 												'default_backup_tab'				=>		'0',				// Default tab to have open on backup page. Useful for advanced used to change.
 												'deployment_allowed'				=>		'0',				// Whether or not this site accepts pushing/pulling of site data via Stash. 0 = disabled, 1 = enabled.
-												'hide_live'							=>		'0',				// Hide Stash Live from menu when set to 1.
+												'hide_live'						=>		'0',				// Hide Stash Live from menu when set to 1.
+												'hide_dashboard_widget'				=>		'0',				// Hide dashboard widget from even being an option in admin when set to 1.
 												'remote_api'						=>		array(
 																								'keys'	=>	array(),	// API key for allowing other BB installations to manage this BB, or use deployments.
 																								'ips'	=>	array(),	// Array of IP addresses allowed to access the remote API. If empty, any ip can connect when enabled.
 																							),
 												'skip_spawn_cron_call'				=>		'0',				// If enabled then we will not call spawn_cron() during backups and attempt to chain runs.
-												'stats'								=>		array(
+												'stats'							=>		array(
 																								'site_size'				=>		0,
 																								'site_size_excluded'	=>		0,
 																								'site_size_updated'		=>		0,
@@ -124,14 +124,14 @@ $pluginbuddy_settings = array(
 																								'db_size_excluded'		=>		0,
 																								'db_size_updated'		=>		0,
 																							),
-												'disalerts'							=>		array(),			// Array of alerts that have been dismissed/hidden.
+												'disalerts'						=>		array(),			// Array of alerts that have been dismissed/hidden.
 												'breakout_tables'					=>		'1',				// Whether or not to breakout some tables into individual steps (for sites with larger dbs). DEFAULT: enabled as of v5.0.
 												'include_importbuddy'				=>		'1',				// Whether or not to include importbuddy.php script inside backup ZIP file.
 												'max_site_log_size'					=>		'3',				// Size in MB to clear the log file if it is exceeded.
 												'compression'						=>		'1',				// Zip compression.
 												'no_new_backups_error_days'			=>		'10',				// Send an error email notification if no new backups have been created in X number of days.
 												'skip_quicksetup'					=>		'0',				// When 1 the quick setup will not pop up on Getting Started page.
-												'prevent_flush'						=>		'0',				// When 1 pb_backupbuddy::flush() will return instead of flushing to workaround some odd server issues on some servers.
+												'prevent_flush'					=>		'0',				// When 1 pb_backupbuddy::flush() will return instead of flushing to workaround some odd server issues on some servers.
 												'rollback_cleanups'					=>		array(),			// Array of rollback serial => time() pairs to run cleanups on, such as dropping temporary undo tables. Run X hours after the timestamp.
 												'phpmysqldump_maxrows'				=>		'',					// When in mysqldump compatibility mode, maximum number of rows to dump per select. Blank uses default.
 												'disable_localization'				=>		'0',				// 0=localization enabled, 1=disabled. Useful when troubleshooting and unable to read localized log.
@@ -142,9 +142,9 @@ $pluginbuddy_settings = array(
 												'deployments'						=>		array(),
 												'max_send_stats_days'				=>		'7',				// Max days to hold onto recent send fileoptions stats files to keep. Default 604800 = 1 week. Configurable in settings.
 												'max_send_stats_count'				=>		'6',				// Maxn numeric amount of most recent send fileoptions stats files to keep. Configurable in settings.
-												'max_notifications_age_days'		=>		'21',				// Max days to keep notifications.
+												'max_notifications_age_days'			=>		'21',				// Max days to keep notifications.
 												'save_backup_sum_log'				=>		'1',				// 1 or 0.  When 1 the full backup status log will be saved in a log file with _sum_ in it. This allows viewing the full status log regardless of Log Level setting.
-												'limit_single_cron_per_pass'		=>		'1',				// Prevents multiple BackupBuddy crons from running per PHP page load by re-scheduling and delaying them to the next load.
+												'limit_single_cron_per_pass'			=>		'1',				// Prevents multiple BackupBuddy crons from running per PHP page load by re-scheduling and delaying them to the next load.
 												'tested_php_runtime'				=>		0,					// Actual tested max PHP runtime based on backupbuddy_core::php_runtime_test() results.
 												'tested_php_memory'					=>		0,					// Actual tested max PHP memory based on backupbuddy_core::php_memory_test() results.
 												'last_tested_php_runtime'			=>		0,					// Timestamp PHP runtime was last tested.
@@ -154,16 +154,36 @@ $pluginbuddy_settings = array(
 												'php_memory_test_minimum_interval'	=>		'604800',			// How often to perform the automated test via the housekeeping function. This must elapse before automated test will run. Zero (0) to disable.
 												'cron_request_timeout_override'		=>		'',					// Overrides cron loopback timeout time. 0 for no override. Useful if server too slow to respond in WP's default 0.01sec to get cron working.
 												'profiles'							=>		array(
+
+																								-3 => array(
+																													'type'		=>	'themes',
+																													'title'		=>	'Themes Only',
+																													'tip'		=>	'Just your themes.',
+																												),
+																								-2 => array(
+																													'type'		=>	'plugins',
+																													'title'		=>	'Plugins Only',
+																													'tip'		=>	'Just your plugins.',
+																												),
+																								-1 => array(
+																													'type'		=>	'media',
+																													'title'		=>	'Media Only',
+																													'tip'		=>	'WordPress Media.',
+																												),
 																								0 => array(
-																													'type'							=>		'defaults',
-																													'title'							=>		'Global Defaults',
+																													'type'						=>		'defaults',
+																													'title'						=>		'Global Defaults',
 																													'skip_database_dump'			=>		'0',						// When enabled the database dump step will be skipped.
 																													'backup_nonwp_tables'			=>		'0',						// Backup tables not prefixed with the WP prefix.
 																													'integrity_check'				=>		'1',						// Zip file integrity check on the backup listing.
 																													'mysqldump_additional_includes'	=>		'',
 																													'mysqldump_additional_excludes'	=>		'',
-																													'excludes'						=>		'',
+																													'excludes'					=>		'',
 																													'custom_root'					=>		'', // Overrides default custom root of ABSPATH with a hard-coded path. Currently only available with FILES backup type.
+																													'backup_mode'					=>		'2',				// 1 = 1.x, 2 = 2.x mode
+																													'exclude_media'				=>		'0',
+																													'exclude_themes'				=>		'0',
+																													'exclude_plugins'				=>		'0',
 																												),
 																								1 => array(
 																													'type'		=>	'db',
@@ -181,18 +201,19 @@ $pluginbuddy_settings = array(
 													'api_key'						=>		'',
 												),
 				'profile_defaults'			=>	array(
-													'type'							=>		'',						// defaults, db, or full
-													'title'							=>		'',						// Friendly title/name.
+													'type'						=>		'',						// defaults, db, or full
+													'title'						=>		'',						// Friendly title/name.
 													'skip_database_dump'			=>		'-1',					// When enabled the database dump step will be skipped.
 													'mysqldump_additional_includes'	=>		'-1',					// Additional db tables to backup in addition to those calculated by mysql_dumpmode. Newslines between tables.
 													'mysqldump_additional_excludes'	=>		'-1',					// Additional db tables to EXCLUDE. This is taken into account last, after tables are calculated by mysql_dumpmode AND additional includes calculated.
 													'backup_nonwp_tables'			=>		'-1',					// Backup tables not prefixed with the WP prefix.
-													//'compression'					=>		'-1',					// Zip compression.
-													'excludes'						=>		'-1',					// Newline deliminated list of directories to exclude from the backup.
+													//'compression'				=>		'-1',					// Zip compression.
+													'excludes'					=>		'-1',					// Newline deliminated list of directories to exclude from the backup.
 													'integrity_check'				=>		'-1',					// Zip file integrity check on the backup listing.
 													'profile_globaltables'			=>		'1',					// Whether or not custom table inclusions/exclusions enabled for this profile.
-													'profile_globalexcludes'		=>		'1',					// Whether or not custom file excludes enabled for this profile.
+													'profile_globalexcludes'			=>		'1',					// Whether or not custom file excludes enabled for this profile.
 													'backup_mode'					=>		'-1',					// -1= use global default, 1=classic (single page load), 2=modern (crons)
+													'custom_root'					=>		'',						// Custom backp root path.
 												),
 				'migration_defaults'		=>	array(
 													'web_address'			=>		'',

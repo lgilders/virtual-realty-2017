@@ -9,9 +9,21 @@
 	</div><br>
 <% } %>
 
+<% if ( '1' == blogPublicStatus ) {
+	sourceSitePublicStatusText = 'Public - Do not discourage search engines from indexing this site';
+} else if ( '0' == blogPublicStatus ) {
+	sourceSitePublicStatusText = 'Private - Discourage search engines from indexing this site';
+} else {
+	sourceSitePublicStatusText = 'Current status not detected';
+}
+%>
 
-<h3>Verify imported site functionality before proceeding to cleanup:<br><br>
-<a href="<%=homeurl%>" target="_blank"><%=homeurl%></a></h3><br>
+
+
+
+<h3>Verify site before proceeding to cleanup:</h3>
+<a href="<%=homeurl%>" target="_blank"><%=homeurl%></a>
+<br><br>
 
 
 <script>
@@ -20,7 +32,7 @@ jQuery( '.expander' ).click( function(){
 });
 </script>
 
-<h3>Common Issues & Tips:</h3>
+<h3>Common issues & tips:</h3>
 <div class="expander-box">
 	<a class="expander" href="javascript:void(0)">Clicking on a post results in a 404 Not Found</a>
 	<div class="content">
@@ -39,6 +51,12 @@ jQuery( '.expander' ).click( function(){
 		This is caused if you restored over your source site database by entering the source site database settings on Step 3. This means that your new site AND your old site are now using the same database but the database has been migrated to work with the new URL. You may re-restore both the source and destination using correct settings or use the mass database replacement tool.  You may correct the modified URL on the source site by using the Server Tools page's Mass Text Replace tool within the Database tab.
 	</div>
 </div>
+<div class="expander-box">
+	<a class="expander" href="javascript:void(0)">File permissions have changed</a>
+	<div class="content">
+		Custom file permissions may be server-specific and may not stay the same as the source site. If you made any custom file permission changes (either manually or via a plugin such as a Security plugin) you may need to manually re-apply them.  Not all servers will function properly with the same permissions.
+	</div>
+</div>
 <br><br>
 
 
@@ -50,8 +68,17 @@ jQuery( '.expander' ).click( function(){
 	
 	<div class="main_box_foot">
 		
-		<h3>Select files to delete for cleanup:</h3>
-		<table style="margin-left: auto; margin-right: auto;"><tr><td>
+		<h3>Site Search Engine Visibility</h3>
+		<div style="display: inline-block; text-align: left;">
+			<label for="set_blog_public-keep" style="font-size: 12px;"><input type="radio" name="set_blog_public" id="set_blog_public-keep" value="" checked="checked">No change (default): <%=sourceSitePublicStatusText%></label><br>
+			<label for="set_blog_public-public" style="font-size: 12px;"><input type="radio" name="set_blog_public" id="set_blog_public-public" value="1">Public - Do not discourage search engines from indexing this site</label><br>
+			<label for="set_blog_public-private" style="font-size: 12px;"><input type="radio" name="set_blog_public" id="set_blog_public-private" value="0">Private - Discourage search engines from indexing this site</label><br>
+		</div>
+			
+		<br><br>
+		
+		<h3>ImportBuddy Cleanup:</h3>
+		<table style="margin-left: auto; margin-right: auto; text-align: left;"><tr><td>
 			<label for="delete_backup" style="width: auto; font-size: 12px;"><input type="checkbox" name="delete_backup" id="delete_backup" value="1" checked> Delete backup zip archive</label>
 			<br>
 			<label for="delete_temp" style="width: auto; font-size: 12px;"><input type="checkbox" name="delete_temp" id="delete_temp" value="1" checked> Delete temporary import files</label>

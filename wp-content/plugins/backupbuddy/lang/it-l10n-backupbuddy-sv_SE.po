@@ -4693,15 +4693,6 @@ msgstr "Loggning & Övrigt"
 msgid "BackupBuddy by default only logs errors. The Advanced Settings section allows enabling logging all activity to this page for advanced troubleshooting. You may force clearing out temporary files, reset dismissed popup alerts, and view debugging data as well."
 msgstr "BackupBuddy som standard loggar bara fel. Avancerade inställningar kan aktivera loggning av all aktivitet på den här sidan för avancerad felsökning. Du kan forcera rensning av tillfälliga filer, återställa avfärdade popup varningar och visa felsökningsdata."
 
-#: _importbuddy/importbuddy/controllers/pages/server_tools.php:31
-#: controllers/pages/_backup-home.php:36
-#: controllers/pages/migrate_restore.php:37
-#: controllers/pages/server_tools.php:31
-#: controllers/pages/settings.php:18
-#@ it-l10n-backupbuddy
-msgid "Tour Page"
-msgstr "Sida för rundtur"
-
 #: controllers/pages/malware_scan.php:46
 #@ it-l10n-backupbuddy
 msgid "Malware Scan URL"

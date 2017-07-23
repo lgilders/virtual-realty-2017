@@ -145,43 +145,16 @@ include( '_server_tests.php' );
 	</tbody>
 </table>
 <?php
-if ( isset( $_GET['phpinfo'] ) && $_GET['phpinfo'] == 'true' ) {
-	if ( defined( 'PB_DEMO_MODE' ) ) {
-		pb_backupbuddy::alert( 'Access denied in demo mode.', true );
-	} else {
-		echo '<br><h3>phpinfo() ', __('Response', 'it-l10n-backupbuddy' ), ':</h3>';
-		
-		echo '<div style="width: 100%; height: 600px; padding-top: 10px; padding-bottom: 10px; overflow: scroll; ">';
-		ob_start();
-		
-		phpinfo();
-		
-		$info = ob_get_contents();
-		ob_end_clean();
-		$info = preg_replace('%^.*<body>(.*)</body>.*$%ms', '$1', $info);
-		echo $info;
-		unset( $info );
-		
-		echo '</div>';
-	}
+echo '<br>';
+echo '<center>';
+
+if ( !defined( 'PB_IMPORTBUDDY' ) ) {
+	echo '<a href="#TB_inline?width=640&#038;height=600&#038;inlineId=pb_serverinfotext_modal" class="button button-secondary button-tertiary thickbox" title="Server Information Results">Display Server Configuration in Text Format</a> &nbsp;&nbsp;&nbsp; ';
+	echo '<a href="' . pb_backupbuddy::ajax_url( 'pinfo' ) . '&#038;TB_iframe=1&#038;width=640&#038;height=600" class="thickbox button secondary-button" title="' . __('Display Extended PHP Settings via phpinfo()', 'it-l10n-backupbuddy' ) . '">' . __('Display Extended PHP Settings via phpinfo()', 'it-l10n-backupbuddy' ) . '</a>';
 } else {
-	echo '<br>';
-	echo '<center>';
-	
-	if ( !defined( 'PB_IMPORTBUDDY' ) ) {
-		echo '<a href="#TB_inline?width=640&#038;height=600&#038;inlineId=pb_serverinfotext_modal" class="button button-secondary button-tertiary thickbox" title="Server Information Results">Display Server Configuration in Text Format</a> &nbsp;&nbsp;&nbsp; ';
-		echo '<a href="' . pb_backupbuddy::ajax_url( 'phpinfo' ) . '&#038;TB_iframe=1&#038;width=640&#038;height=600" class="thickbox button secondary-button" title="' . __('Display Extended PHP Settings via phpinfo()', 'it-l10n-backupbuddy' ) . '">' . __('Display Extended PHP Settings via phpinfo()', 'it-l10n-backupbuddy' ) . '</a>';
-	} else {
-		echo '<a id="serverinfotext" class="button button-secondary button-tertiary button-primary thickbox toggle" title="Server Information Results">Display Results in Text Format</a> &nbsp;&nbsp;&nbsp; ';
-	}
-	echo '</center>';
-	
-	/*
-	echo '<pre>';
-	print_r( ini_get_all() );
-	echo '</pre>';
-	*/
+	echo '<a id="serverinfotext" class="button button-secondary button-tertiary button-primary thickbox toggle" title="Server Information Results">Display Results in Text Format</a> &nbsp;&nbsp;&nbsp; ';
 }
+echo '</center>';
 ?><br>
 
 

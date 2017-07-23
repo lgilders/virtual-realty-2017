@@ -1,3 +1,130 @@
+<script type="text/javascript">
+	jQuery(document).ready(function() {
+		jQuery( '.pb_backupbuddy_hoveraction_sendimportbuddy' ).click( function(e) {
+			<?php if ( pb_backupbuddy::$options['importbuddy_pass_hash'] == '' ) { ?>
+				alert( 'You must set an ImportBuddy password via the BackupBuddy settings page before you can send this file.' );
+				return false;
+			<?php } ?>
+			tb_show( 'BackupBuddy', '<?php echo pb_backupbuddy::ajax_url( 'destination_picker' ); ?>&callback_data=' + jQuery(this).attr('rel') + '&sending=1&TB_iframe=1&width=640&height=455', null );
+			return false;
+		});
+		
+		jQuery( '.pb_backupbuddy_get_importbuddy' ).click( function(e) {
+			<?php
+			if ( pb_backupbuddy::$options['importbuddy_pass_hash'] == '' ) {
+				?>
+				
+				var password = prompt( '<?php _e( 'To download, enter a password to lock the ImportBuddy script from unauthorized access. You will be prompted for this password when you go to importbuddy.php in your browser. Since you have not defined a default password yet this will be used as your default and can be changed later from the Settings page.', 'it-l10n-backupbuddy' ); ?>' );
+				if ( ( password != null ) && ( password != '' ) ) {
+					window.location.href = '<?php echo pb_backupbuddy::ajax_url( 'importbuddy' ); ?>&p=' + encodeURIComponent( password );
+				}
+				if ( password == '' ) {
+					alert( 'You have not set a default password on the Settings page so you must provide a password here to download ImportBuddy.' );
+				}
+				
+				return false;
+				<?php
+			} else {
+				?>
+				var password = prompt( '<?php _e( 'To download, either enter a new password for just this download OR LEAVE BLANK to use your default ImportBuddy password (set on the Settings page) to lock the ImportBuddy script from unauthorized access.', 'it-l10n-backupbuddy' ); ?>' );
+				if ( password != null ) {
+					window.location.href = '<?php echo pb_backupbuddy::ajax_url( 'importbuddy' ); ?>&p=' + encodeURIComponent( password );
+				}
+				return false;
+				<?php
+			}
+			?>
+			return false;
+		});
+		
+		
+		// Click meta option in backup list to send a backup to a remote destination.
+		jQuery( '.pb_backupbuddy_hoveraction_send' ).click( function(e) {
+			tb_show( 'BackupBuddy', '<?php echo pb_backupbuddy::ajax_url( 'destination_picker' ); ?>&callback_data=' + jQuery(this).attr('rel') + '&sending=1&action_verb=to%20send%20to&TB_iframe=1&width=640&height=455', null );
+			return false;
+		});
+		
+		
+		// Backup listing View Hash meta clicked.
+		jQuery( '.pb_backupbuddy_hoveraction_hash' ).click( function(e) {
+			tb_show( 'BackupBuddy', '<?php echo pb_backupbuddy::ajax_url( 'hash' ); ?>&callback_data=' + jQuery(this).attr('rel') + '&TB_iframe=1&width=640&height=455', null );
+			return false;
+		});
+		
+		
+		// Click the meta option in the backup list to apply a note to a backup.
+		jQuery( '.pb_backupbuddy_hoveraction_note' ).click( function(e) {
+			
+			var existing_note = jQuery(this).parents( 'td' ).find('.pb_backupbuddy_notetext').text();
+			if ( existing_note == '' ) {
+				existing_note = 'My first backup';
+			}
+			
+			var note_text = prompt( '<?php _e( 'Enter a short descriptive note to apply to this archive for your reference. (175 characters max)', 'it-l10n-backupbuddy' ); ?>', existing_note );
+			if ( ( note_text == null ) || ( note_text == '' ) ) {
+				// User cancelled.
+			} else {
+				jQuery( '.pb_backupbuddy_backuplist_loading' ).show();
+				jQuery.post( '<?php echo pb_backupbuddy::ajax_url( 'set_backup_note' ); ?>', { backup_file: jQuery(this).attr('rel'), note: note_text }, 
+					function(data) {
+						data = jQuery.trim( data );
+						jQuery( '.pb_backupbuddy_backuplist_loading' ).hide();
+						if ( data != '1' ) {
+							alert( "<?php _e('Error', 'it-l10n-backupbuddy' );?>: " + data );
+						}
+						javascript:location.reload(true);
+					}
+				);
+			}
+			return false;
+		});
+		
+		
+	});
+
+	function pb_backupbuddy_selectdestination( destination_id, destination_title, callback_data, delete_after, mode ) {
+		
+		if ( ( callback_data != '' ) && ( callback_data != 'delayed_send' ) ) {
+			if ( callback_data == 'importbuddy.php' ) {
+				window.location.href = '<?php echo pb_backupbuddy::page_url(); ?>&destination=' + destination_id + '&destination_title=' + destination_title + '&callback_data=' + callback_data;
+				return false;
+			}
+			jQuery.post( '<?php echo pb_backupbuddy::ajax_url( 'remote_send' ); ?>', { destination_id: destination_id, destination_title: destination_title, file: callback_data, trigger: 'manual', delete_after: delete_after }, 
+				function(data) {
+					data = jQuery.trim( data );
+					if ( data.charAt(0) != '1' ) {
+						alert( "<?php _e("Error starting remote send", 'it-l10n-backupbuddy' ); ?>:" + "\n\n" + data );
+					} else {
+						if ( delete_after == true ) {
+							var delete_alert = "<?php _e( 'The local backup will be deleted upon successful transfer as selected.', 'it-l10n-backupbuddy' ); ?>";
+						} else {
+							var delete_alert = '';
+						}
+						alert( "<?php _e('Your file has been scheduled to be sent now. It should arrive shortly.', 'it-l10n-backupbuddy' ); ?> <?php _e( 'You will be notified by email if any problems are encountered.', 'it-l10n-backupbuddy' ); ?>" + " " + delete_alert + "\n\n" + data.slice(1) );
+						/* Try to ping server to nudge cron along since sometimes it doesnt trigger as expected. */
+						jQuery.post( '<?php echo admin_url('admin-ajax.php'); ?>',
+							function(data) {
+							}
+						);
+					}
+				}
+			);
+		} else if ( callback_data == 'delayed_send' ) { // Specified a destination to send to later.
+			jQuery( '#pb_backupbuddy_backup_remotedestination' ).val( destination_id );
+			jQuery( '#pb_backupbuddy_backup_deleteafter' ).val( delete_after );
+			jQuery( '#pb_backupbuddy_backup_remotetitle' ).html( 'Destination: "' + destination_title + '".' );
+			jQuery( '#pb_backupbuddy_backup_remotetitle' ).slideDown();
+		} else {
+			window.location.href = '<?php
+			if ( is_network_admin() ) {
+				echo network_admin_url( 'admin.php' );
+			} else {
+				echo admin_url( 'admin.php' );
+			}
+			?>?page=pb_backupbuddy_backup&custom=remoteclient&destination_id=' + destination_id;
+		}
+	} // end pb_backupbuddy_selectdestination().
+</script>
 <?php
 // Incoming variables: $backups generated via core.php backups_list() function.
 
@@ -10,62 +137,16 @@ $hover_actions = array();
 $backup_directory = backupbuddy_core::getBackupDirectory(); // Normalize for Windows paths.
 $backup_directory = str_replace( '\\', '/', $backup_directory );
 $backup_directory = rtrim( $backup_directory, '/\\' ) . '/'; // Enforce single trailing slash.
-if ( ( $listing_mode != 'restore_files' ) && ( FALSE !== stristr( $backup_directory, ABSPATH ) ) ) {
-	$hover_actions[pb_backupbuddy::ajax_url( 'download_archive' ) . '&backupbuddy_backup='] = '<span class="dashicons dashicons-download"></span> ' . __( 'Download', 'it-l10n-backupbuddy' );
-}
 
 
-if ( $listing_mode == 'restore_files' ) {
-	$hover_actions[pb_backupbuddy::ajax_url( 'download_archive' ) . '&zip_viewer='] = '<span class="dashicons dashicons-visibility"></span> ' . __( 'Browse & Restore Files', 'it-l10n-backupbuddy' );
-	$hover_actions['note'] = __( 'Note', 'it-l10n-backupbuddy' );
-	$bulk_actions = array();
-}
 
+$hover_actions[pb_backupbuddy::ajax_url( 'download_archive' ) . '&backupbuddy_backup='] = __( 'Download', 'it-l10n-backupbuddy' );
+$hover_actions['send'] = __( 'Send', 'it-l10n-backupbuddy' );
+$hover_actions['note'] = __( 'Note', 'it-l10n-backupbuddy' );
+$hover_actions['zip_viewer'] = '' . __( 'Browse & Restore Files', 'it-l10n-backupbuddy' );
+$hover_actions['rollback'] =  __( 'Database Rollback', 'it-l10n-backupbuddy' );
 
-if ( $listing_mode == 'default' ) {
-	
-	$hover_actions['send'] = '<span class="dashicons dashicons-migrate"></span> ' . __( 'Send', 'it-l10n-backupbuddy' );
-	$hover_actions['zip_viewer'] = '<span class="dashicons dashicons-visibility"></span>&nbsp; ' . __( 'Browse & Restore Files', 'it-l10n-backupbuddy' );
-	$hover_actions['note'] = '<span class="dashicons dashicons-edit"></span> ' . __( 'Note', 'it-l10n-backupbuddy' );
-	$hover_actions['hash'] = '<span class="dashicons dashicons-chart-line"></span> ' . __( 'Checksum', 'it-l10n-backupbuddy' );
-	$bulk_actions = array( 'delete_backup' => __( 'Delete', 'it-l10n-backupbuddy' ) );
-
-}
-
-
-if ( $listing_mode == 'migrate' ) {
-	$hover_actions['migrate'] = '<span class="dashicons dashicons-share-alt2"></span> ' . __( 'Migrate', 'it-l10n-backupbuddy' );
-	$hover_actions[pb_backupbuddy::ajax_url( 'download_archive' ) . '&backupbuddy_backup='] = '<span class="dashicons dashicons-download"></span> ' . __( 'Download', 'it-l10n-backupbuddy' );
-	$hover_actions['note'] = '<span class="dashicons dashicons-edit"></span> ' . __( 'Note', 'it-l10n-backupbuddy' );
-	$bulk_actions = array();
-	
-	foreach( $backups as $backup_id => $backup ) {
-		if ( $backup[1] == 'Database' ) {
-			unset( $backups[$backup_id] );
-		}
-	}
-	
-}
-
-
-if ( $listing_mode == 'restore_migrate' ) {
-	$hover_actions[pb_backupbuddy::ajax_url( 'download_archive' ) . '&backupbuddy_backup='] = '<span class="dashicons dashicons-download"></span> ' . __( 'Download', 'it-l10n-backupbuddy' );
-	$hover_actions['send'] = '<span class="dashicons dashicons-migrate"></span> ' . __( 'Send', 'it-l10n-backupbuddy' );
-	$hover_actions['page=pb_backupbuddy_backup&zip_viewer'] = '<span class="dashicons dashicons-visibility"></span>&nbsp; ' . __( 'Browse & Restore Files', 'it-l10n-backupbuddy' );
-	$hover_actions['rollback'] = '<span class="dashicons dashicons-backup"></span> ' . __( 'Database Rollback', 'it-l10n-backupbuddy' );
-	$hover_actions['migrate'] = '<span class="dashicons dashicons-share-alt2"></span> ' . __( 'Migrate', 'it-l10n-backupbuddy' );
-	$hover_actions['note'] = '<span class="dashicons dashicons-edit"></span> ' . __( 'Note', 'it-l10n-backupbuddy' );
-	$bulk_actions = array();
-	
-	/*
-	foreach( $backups as $backup_id => $backup ) {
-		if ( $backup[1] == 'Database' ) {
-			unset( $backups[$backup_id] );
-		}
-	}
-	*/
-	
-}
+$bulk_actions = array( 'delete_backup' => __( 'Delete', 'it-l10n-backupbuddy' ) );
 
 
 
@@ -80,25 +161,6 @@ if ( count( $backups ) == 0 ) {
 		__('File Size', 'it-l10n-backupbuddy' ),
 		__('Status', 'it-l10n-backupbuddy' ) . pb_backupbuddy::tip( __('Backups are checked to verify that they are valid BackupBuddy backups and contain all of the key backup components needed to restore. Backups may display as invalid until they are completed. Click the refresh icon to re-verify the archive.', 'it-l10n-backupbuddy' ), '', false ),
 	);
-	
-	
-	// Remove some columns for migration mode.
-	/*
-	if ( $listing_mode != 'default' ) {
-		
-		foreach( $backups as &$backup ) {
-			unset( $backup[1] ); // Remove backup type (only full shows for migration).
-			$backup = array_values( $backup );
-		}
-		$backups = array_values( $backups );
-		
-		unset( $columns[1] );
-		$columns = array_values( $columns );
-		
-		
-	}
-	*/
-	
 	
 	pb_backupbuddy::$ui->list_table(
 		$backups,

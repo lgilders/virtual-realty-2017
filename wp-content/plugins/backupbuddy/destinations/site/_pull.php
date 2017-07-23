@@ -14,11 +14,9 @@ _e( 'WordPress core files will not be transferred between sites.', 'it-l10n-back
 echo ' <span style="position: relative; top: -0.5em; font-size: 0.7em;">&Dagger;</span> ';
 _e( 'BackupBuddy plugin files will not be transferred between sites.', 'it-l10n-backupbuddy' );
 
-echo '<br><br>';
-
 
 if ( $deployData['remoteInfo']['activeTheme'] == $localInfo['activeTheme'] ) {
-	$activeThemeBInfo = ' (' . count( $deployData['pullThemeFiles'] ) . ' files to pull)';
+	$activeThemeBInfo = ' <a href="javascript:void(0);" class="deploy-show-files" rel="pullThemeFiles" title="Click to list files.">(' . count( $deployData['pullThemeFiles'] ) . ' files to pull)</a>';
 } else {
 	$activeThemeBInfo = ' (' . __( 'Active theme differs so not updating.', 'it-l10n-backupbuddy' ) . ')';
 }
@@ -31,7 +29,7 @@ if ( isset( $deployData['remoteInfo']['activeChildTheme'] ) ) {
 	}
 	
 	if ( $deployData['remoteInfo']['activeChildTheme'] == $localInfo['activeChildTheme'] ) {
-		$activeChildThemeBInfo = ' (' . count( $deployData['pullChildThemeFiles'] ) . ' files to pull' . $activeChildThemeBSame . ')';
+		$activeChildThemeBInfo = ' <a href="javascript:void(0);" class="deploy-show-files" rel="pullChildThemeFiles" title="Click to list files.">(' . count( $deployData['pullChildThemeFiles'] ) . ' files to pull' . $activeChildThemeBSame . ')</a>';
 	} else {
 		$activeChildThemeBInfo = ' (' . __( 'Active child theme differs so not updating.', 'it-l10n-backupbuddy' ) . ')';
 	}
@@ -44,7 +42,7 @@ if ( isset( $deployData['remoteInfo']['activeChildTheme'] ) ) {
 
 
 
-$activePluginsAInfo = ' (' . count( $deployData['pullPluginFiles'] ) . ' files to pull)';
+$activePluginsAInfo = ' <a href="javascript:void(0);" class="deploy-show-files" rel="pullPluginFiles" title="Click to list files.">(' . count( $deployData['pullPluginFiles'] ) . ' files to pull)</a>';
 
 
 $headFoot = array( __( '<b>Pulling</b> from (source)', 'it-l10n-backupbuddy' ), __( 'To this site (destination)', 'it-l10n-backupbuddy' ) );
@@ -60,7 +58,7 @@ $pushRows = array(
 	'Active Plugins' => array( $activePluginsB, $activePluginsA . $activePluginsAInfo ),
 	'Active Theme' => array( $deployData['remoteInfo']['activeTheme'], $localInfo['activeTheme'] . ' ' . $activeThemeBInfo ),
 	'Active Child Theme' => array( $remoteActiveChildTheme, $localInfo['activeChildTheme'] . ' ' . $activeChildThemeBInfo ),
-	'Media / Attachments' => array( $deployData['remoteInfo']['mediaCount'], $localInfo['mediaCount'] . ' (' . count( $deployData['pullMediaFiles'] ) . ' files to pull)' ),
+	'Media / Attachments' => array( $deployData['remoteInfo']['mediaCount'], $localInfo['mediaCount'] . ' <a href="javascript:void(0);" class="deploy-show-files" rel="pullMediaFiles" title="Click to list files.">(' . count( $deployData['pullMediaFiles'] ) . ' files to pull)</a>' ),
 );
 
 

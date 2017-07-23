@@ -7,7 +7,7 @@ if ( ! is_admin() ) { // Not in WordPress (or not logged in). Check if in Import
 	Auth::require_authentication(); // Die if not logged in.
 }
 
-pb_backupbuddy::load_style( 'admin.css', true );
+pb_backupbuddy::load_style( 'admin.css' );
 global $wpdb;
 
 

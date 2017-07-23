@@ -1129,10 +1129,7 @@ if ( !class_exists( "pluginbuddy_zipbuddy" ) ) {
 			$listmaker = NULL;
 			
 			// Set some additional system excludes here for now - these are all from the site install root
-			$additional_excludes = array( self::NORM_DIRECTORY_SEPARATOR . 'importbuddy' . self::NORM_DIRECTORY_SEPARATOR,
-										  self::NORM_DIRECTORY_SEPARATOR . 'importbuddy.php',
-										  self::NORM_DIRECTORY_SEPARATOR . 'wp-content' . self::NORM_DIRECTORY_SEPARATOR . 'uploads' . self::NORM_DIRECTORY_SEPARATOR . 'pb_backupbuddy' . self::NORM_DIRECTORY_SEPARATOR,
-										);
+			$additional_excludes = array();
 			
 			// Make sure we have a valid zip method strategy setting to use otherwise fall back to emergency compatibility
 			if ( isset( pb_backupbuddy::$options[ 'zip_method_strategy' ] ) && 	( '0' !== pb_backupbuddy::$options[ 'zip_method_strategy' ] ) ) {

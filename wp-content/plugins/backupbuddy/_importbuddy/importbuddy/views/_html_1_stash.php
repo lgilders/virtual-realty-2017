@@ -61,7 +61,7 @@ function stashAPI( $settings, $action, $additionalParams = array() ) {
 		// Finally see if the API returned an error.
 		if ( isset( $response_decoded['error'] ) ) {            
 			if ( isset( $response_decoded['error']['message'] ) ) {
-				$error = 'Error #39752893. Server reported an error performing action `' . $action . '` with additional params: `' . print_r( $additionalParams, true ) . '`. Details: `' . print_r( $response_decoded['error'], true ) . '`.';
+				$error = 'Error #39752893a. Server reported an error performing action `' . $action . '` with additional params: `' . print_r( $additionalParams, true ) . '`. Details: `' . print_r( $response_decoded['error'], true ) . '`.';
 				pb_backupbuddy::status( 'warning', $error );
 				return $response_decoded['error']['message'];
 			} else {
@@ -224,6 +224,11 @@ if ( count( $settings_result ) == 0 ) { // No form submitted.
 					} elseif( 'plugins' == $stash_file['backup_type'] ) { // Omit from list.
 						unset( $stash_files[ $i ] );
 						continue;
+					} elseif( 'media' == $stash_file['backup_type'] ) { // Omit from list.
+						unset( $stash_files[ $i ] );
+						continue;
+					} elseif( 'files' == $stash_file['backup_type'] ) {
+						$backup_type = 'Files';
 					} else {
 						$backup_type = 'Unknown';
 						continue;

@@ -657,12 +657,6 @@ hr {
 }
 
 
-.pb_backupbuddy_begintour {
-	float: right;
-	margin-top: 6px !important;
-	font-size: 14px !important;
-}
-
 #pb_backupbuddy_status_wrap {
 	display: none;
 }
@@ -683,6 +677,7 @@ hr {
 	background: rgb(255, 255, 200);
 	max-height: 220px;
 	overflow: scroll;
+	font-size: 0.9em;
 }
 .warning_alert_title {
 	display: block;

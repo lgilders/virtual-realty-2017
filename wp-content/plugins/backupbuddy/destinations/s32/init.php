@@ -332,9 +332,12 @@ class pb_backupbuddy_destination_s32 { // Change class name end to match destina
 					'ContentLength' => $contentLength,
 				);
 				if ( $contentLength > 0 ) {
-					$uploadArr['Body'] = fread( $f, $contentLength );
+					if ( FALSE === ( $uploadArr['Body'] = fread( $f, $contentLength ) ) ) {
+						pb_backupbuddy::status( 'error', 'Error #89489344: Failed freading file object. Check file permissions (and existance) of file.' );
+					}
 				} else { // File is 0 bytes. Empty body.
 					$uploadArr['Body'] = '';
+					pb_backupbuddy::status( 'details', 'NOTE: Usung empty file body due to part content length of zero.' );
 				}
 				//pb_backupbuddy::status( 'details', 'Send array: `' . print_r( $uploadArr, true ) . '`.' );
 				//error_log( print_r( $uploadArr, true ) );
@@ -587,13 +590,22 @@ class pb_backupbuddy_destination_s32 { // Change class name end to match destina
 		
 		if ( $backup_type == 'full' ) {
 			$limit = $settings['full_archive_limit'];
-			pb_backupbuddy::status( 'details', 'Full backup archive limit of `' . $limit . '` of type `full` based on destination settings.' );
+			pb_backupbuddy::status( 'details', 'Backup archive limit of `' . $limit . '` of type `full` based on destination settings.' );
 		} elseif ( $backup_type == 'db' ) {
 			$limit = $settings['db_archive_limit'];
-			pb_backupbuddy::status( 'details', 'Database backup archive limit of `' . $limit . '` of type `db` based on destination settings.' );
+			pb_backupbuddy::status( 'details', 'Backup archive limit of `' . $limit . '` of type `db` based on destination settings.' );
 		} elseif ( $backup_type == 'files' ) {
 			$limit = $settings['files_archive_limit'];
-			pb_backupbuddy::status( 'details', 'Database backup archive limit of `' . $limit . '` of type `files` based on destination settings.' );
+			pb_backupbuddy::status( 'details', 'Backup archive limit of `' . $limit . '` of type `files` based on destination settings.' );
+		} elseif ( $backup_type == 'themes' ) {
+			$limit = $settings['themes_archive_limit'];
+			pb_backupbuddy::status( 'details', 'Backup archive limit of `' . $limit . '` of type `themes` based on destination settings.' );
+		} elseif ( $backup_type == 'plugins' ) {
+			$limit = $settings['plugins_archive_limit'];
+			pb_backupbuddy::status( 'details', 'Backup archive limit of `' . $limit . '` of type `plugins` based on destination settings.' );
+		} elseif ( $backup_type == 'media' ) {
+			$limit = $settings['media_archive_limit'];
+			pb_backupbuddy::status( 'details', 'Backup archive limit of `' . $limit . '` of type `media` based on destination settings.' );
 		} else {
 			$limit = 0;
 			pb_backupbuddy::status( 'warning', 'Warning #237332. Unable to determine backup type (reported: `' . $backup_type . '`) so archive limits NOT enforced for this backup.' );
@@ -1124,7 +1136,7 @@ class pb_backupbuddy_destination_s32 { // Change class name end to match destina
 					'LocationConstraint' => $settings['region']
 				) );
 			} catch( Exception $e ) {
-				return self::_error( 'Error #3892833: Unable to create bucket. Details: `' . $e->getMessage() . '`.' );
+				return self::_error( 'Error #3892833a: Unable to create bucket. Details: `' . $e->getMessage() . '`.' );
 			}
 			
 		} // end if create bucket.

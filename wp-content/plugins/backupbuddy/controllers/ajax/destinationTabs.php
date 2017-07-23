@@ -3,7 +3,7 @@ backupbuddy_core::verifyAjaxAccess();
 
 
 require_once( pb_backupbuddy::plugin_path() . '/destinations/bootstrap.php' );
-pb_backupbuddy::$ui->ajax_header();
+pb_backupbuddy::$ui->ajax_header( true, false );
 
 pb_backupbuddy::load_style( 'admin.js' );
 pb_backupbuddy::load_style( 'admin' );
@@ -215,6 +215,8 @@ if ( $mode == 'migration' ) {
 
 <?php
 
+//pb_backupbuddy::$options['remote_destinations'] = array();
+
 $destinationTabs = array();
 foreach( pb_backupbuddy::$options['remote_destinations'] as $destination_id => $destination ) {
 	if ( 'live' == $destination['type'] ) { // Hide Live from tab listing.
@@ -309,6 +311,11 @@ $destination_type = pb_backupbuddy::_GET( 'add' );
 	?>
 	<div class="bb_destinations" style="display: block; margin: 0;">
 		<div class="bb_destinations-group bb_destinations-new" style="display: block;">
+			Backups are by default stored in your local backup directory<?php pb_backupbuddy::tip( backupbuddy_core::getBackupDirectory() ); ?> configured on the Settings page.
+			<br>
+			You may also send backups to additional remote destinations or directories for safe keeping & redundancy.
+			<br><br>
+			
 			<h2>What kind of destination do you want to add?</h2><br>
 			<ul>
 				<?php

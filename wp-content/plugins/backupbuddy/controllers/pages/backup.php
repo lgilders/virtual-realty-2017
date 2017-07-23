@@ -36,10 +36,7 @@ if ( pb_backupbuddy::_GET( 'custom' ) != '' ) { // Custom page.
 	}
 	
 } else { // Normal backup page.
-	
-	if ( pb_backupbuddy::_GET( 'zip_viewer' ) != '' ) {
-		require_once( '_zip_viewer.php' );
-	} elseif ( pb_backupbuddy::_GET( 'backupbuddy_backup' ) == '' ) {
+	if ( pb_backupbuddy::_GET( 'backupbuddy_backup' ) == '' ) {
 		require_once( '_backup-home.php' );
 	} else {
 		require_once( '_backup-perform.php' );

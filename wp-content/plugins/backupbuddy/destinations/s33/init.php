@@ -11,7 +11,7 @@ class pb_backupbuddy_destination_s33 { // Change class name end to match destina
 	const STASH_CONFIRM_RETRY_DELAY = 90; // Seconds to wait before retrying the check to confirm a Stash send failed if the initial confirmation failed without an explicit failure reason.
 	
 	public static $destination_info = array(
-		'name'			=>		'Amazon S3 (v3) - BETA',
+		'name'			=>		'Amazon S3 (v3)',
 		'description'		=>		'Amazon S3 is a well known cloud storage provider. This destination is known to be reliable and works well with BackupBuddy. Supports both bursting and chunking. <a href="http://aws.amazon.com/s3/" target="_blank">Learn more here.</a>',
 		'category'		=>		'normal', // best, normal, legacy
 	);
@@ -327,9 +327,12 @@ class pb_backupbuddy_destination_s33 { // Change class name end to match destina
 					'ContentLength' => $contentLength,
 				);
 				if ( $contentLength > 0 ) {
-					$uploadArr['Body'] = fread( $f, $contentLength );
+					if ( FALSE === ( $uploadArr['Body'] = fread( $f, $contentLength ) ) ) {
+						pb_backupbuddy::status( 'error', 'Error #3498348934: Failed freading file object. Check file permissions (and existance) of file.' );
+					}
 				} else { // File is 0 bytes. Empty body.
 					$uploadArr['Body'] = '';
+					pb_backupbuddy::status( 'details', 'NOTE: Usung empty file body due to part content length of zero.' );
 				}
 				//pb_backupbuddy::status( 'details', 'Send array: `' . print_r( $uploadArr, true ) . '`.' );
 				//error_log( print_r( $uploadArr, true ) );
@@ -593,7 +596,16 @@ class pb_backupbuddy_destination_s33 { // Change class name end to match destina
 			pb_backupbuddy::status( 'details', 'Database backup archive limit of `' . $limit . '` of type `db` based on destination settings.' );
 		} elseif ( $backup_type == 'files' ) {
 			$limit = $settings['files_archive_limit'];
-			pb_backupbuddy::status( 'details', 'Database backup archive limit of `' . $limit . '` of type `files` based on destination settings.' );
+			pb_backupbuddy::status( 'details', 'Backup archive limit of `' . $limit . '` of type `files` based on destination settings.' );
+		} elseif ( $backup_type == 'themes' ) {
+			$limit = $settings['themes_archive_limit'];
+			pb_backupbuddy::status( 'details', 'Backup archive limit of `' . $limit . '` of type `themes` based on destination settings.' );
+		} elseif ( $backup_type == 'plugins' ) {
+			$limit = $settings['plugins_archive_limit'];
+			pb_backupbuddy::status( 'details', 'Backup archive limit of `' . $limit . '` of type `plugins` based on destination settings.' );
+		} elseif ( $backup_type == 'media' ) {
+			$limit = $settings['media_archive_limit'];
+			pb_backupbuddy::status( 'details', 'Backup archive limit of `' . $limit . '` of type `media` based on destination settings.' );
 		} else {
 			$limit = 0;
 			pb_backupbuddy::status( 'warning', 'Warning #237332. Unable to determine backup type (reported: `' . $backup_type . '`) so archive limits NOT enforced for this backup.' );
@@ -757,7 +769,7 @@ class pb_backupbuddy_destination_s33 { // Change class name end to match destina
 				),
 			) ); // list all the files in the subscriber account
 		} Catch( Exception $e ) {
-			$error = 'Error #83823233393: Unable to delete one or more files. Details: `' . $e->getMessage() . '`.';
+			$error = 'Error #83823233393b: Unable to delete one or more files. Details: `' . $e->getMessage() . '`.';
 			self::_error( $error );
 			return $error;
 		}
@@ -1129,7 +1141,7 @@ class pb_backupbuddy_destination_s33 { // Change class name end to match destina
 					'LocationConstraint' => $settings['region']
 				) );
 			} catch( Exception $e ) {
-				return self::_error( 'Error #3892833: Unable to create bucket. Details: `' . $e->getMessage() . '`.' );
+				return self::_error( 'Error #3892833b: Unable to create bucket. Details: `' . $e->getMessage() . '`.' );
 			}
 			
 		} // end if create bucket.

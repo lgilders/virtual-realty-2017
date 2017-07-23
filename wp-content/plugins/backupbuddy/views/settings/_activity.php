@@ -40,7 +40,7 @@ $notificationTable = array_reverse( $notificationTable );
 
 echo '<p>';
 if ( count( $notificationTable ) > 0 ) {
-	_e( 'Below lists some of the recent activity for this site.', 'it-l10n-backupbuddy' );
+	//_e( 'Below lists some of the recent activity for this site.', 'it-l10n-backupbuddy' );
 } else {
 	_e( 'No recent activity logged yet.', 'it-l10n-backupbuddy' );
 	return;

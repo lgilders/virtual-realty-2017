@@ -47,7 +47,8 @@ wp_print_styles( 'thickbox' );
 
 
 <?php
-pb_backupbuddy::$ui->title( __( 'BackupBuddy Schedules', 'it-l10n-backupbuddy' ) );
+pb_backupbuddy::$ui->title( __( 'Schedules', 'it-l10n-backupbuddy' ) );
+echo '<br>';
 pb_backupbuddy::disalert( 'schedule_limit_reminder', '<span class="pb_label">Tip</span> ' . __( 'Keep old backups from piling up by configuring "Local Archive Storage Limits" on the Settings page.', 'it-l10n-backupbuddy' ) );
 
 
@@ -73,12 +74,8 @@ if ( ( count( $schedules ) > 0 ) && ( pb_backupbuddy::_GET( 'edit' ) == '' ) ) {
 	echo '<br>';
 }
 
-
-if ( pb_backupbuddy::_GET( 'edit' ) == '' ) {
-	echo '<h3>' . __( 'Add New Schedule', 'it-l10n-backupbuddy' ) . '</h3>';
-} else {
-	echo '<h3>' . __( 'Edit Schedule', 'it-l10n-backupbuddy' ) . '</h3>';
-}
+echo '<br>';
+echo '<h1>' . __( $mode_title, 'it-l10n-backupbuddy' ) . '</h1>';
 $schedule_form->display_settings( '+ ' . $mode_title );
 if ( pb_backupbuddy::_GET( 'edit' ) != '' ) {
 	echo '<br><br><a href="' . pb_backupbuddy::page_url() . '&tab=1#database_replace" class="button secondary-button">&larr; ' .  __( 'back', 'it-l10n-backupbuddy' ) . '</a>';
@@ -104,4 +101,3 @@ if ( !wp_script_is( 'media-upload' ) ) {
 	wp_enqueue_script( 'media-upload' );
 	wp_print_scripts( 'media-upload' );
 }
-?>

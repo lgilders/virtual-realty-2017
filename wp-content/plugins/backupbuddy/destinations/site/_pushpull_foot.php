@@ -2,6 +2,10 @@
 // Incoming vars:
 // $deployDirection		push or pull
 ?>
+&nbsp;
+<span class="deploy-unmatched-plugin"><?php _e( 'Red indicates a plugin that does not exist on both sites.', 'it-l10n-backupbuddy' ); ?></span> <span class="deploy-unmatched-plugin-version"><?php _e( 'Blue indicates different versions.', 'it-l10n-backupbuddy' ); ?></span>
+
+<br><br>
 <table class="widefat">
 	<thead>
 		<tr class="thead">
@@ -29,6 +33,7 @@
 </table>
 
 
+
 <?php
 if ( is_network_admin() ) {
 	$backup_url = network_admin_url( 'admin.php' );
@@ -53,11 +58,12 @@ $backup_url .= '?page=pb_backupbuddy_backup';
 		.database_contents_select, .plugins_select {
 			padding: 5px;
 			line-height: 1.7em;
-			max-height: 100px;
 			overflow: scroll;
 			border: 1px solid #ddd;
 			background: #f9f9f9;
-			max-width: 400px;
+			resize: both;
+			height: 150px;
+			width: 400px;
 		}
 		.database_contents_select::-webkit-scrollbar, .plugins_select::-webkit-scrollbar {
 			-webkit-appearance: none;
@@ -79,84 +85,7 @@ $backup_url .= '?page=pb_backupbuddy_backup';
 		}
 	</style>
 	
-	<script>
-		jQuery(document).ready(function() {
-			
-			/* Begin database contents selecting */
-			jQuery( '.database_contents_shortcuts-all' ).click( function(e){
-				e.preventDefault();
-				jQuery( '.database_contents_select' ).find( 'input' ).prop( 'checked', true );
-				bb_count_selected_tables();
-			});
-			
-			jQuery( '.database_contents_shortcuts-none' ).click( function(e){
-				e.preventDefault();
-				jQuery( '.database_contents_select' ).find( 'input' ).prop( 'checked', false );
-				bb_count_selected_tables();
-			});
-			
-			jQuery( '.database_contents_select input' ).click( function(){
-				bb_count_selected_tables();
-			});
-			
-			jQuery( '.database_contents_shortcuts-prefix' ).click( function(e){
-				e.preventDefault();
-				
-				if ( 'push' == jQuery('#backupbuddy_deploy_direction').attr( 'data-direction' ) ) {
-					prefix = jQuery( '#backupbuddy_deploy_prefixA' ).attr( 'data-prefix' );
-				} else {
-					prefix = jQuery( '#backupbuddy_deploy_prefixB' ).attr( 'data-prefix' );
-				}
-				
-				jQuery( '.database_contents_select' ).find( 'input' ).each( function(index){
-					if ( jQuery(this).val().indexOf( prefix ) == 0 ) {
-						jQuery(this).prop( 'checked', true );
-					} else {
-						jQuery(this).prop( 'checked', false );
-					}
-				});
-				
-				bb_count_selected_tables();
-			});
-			/* End database contents selecting. */
-			
-			
-			
-			/* Begin plugins selecting. */
-			jQuery( '.plugins_shortcuts-all' ).click( function(e){
-				e.preventDefault();
-				jQuery( '.plugins_select' ).find( 'input' ).prop( 'checked', true );
-				bb_count_selected_plugins();
-			});
-			
-			jQuery( '.plugins_shortcuts-none' ).click( function(e){
-				e.preventDefault();
-				jQuery( '.plugins_select' ).find( 'input' ).prop( 'checked', false );
-				bb_count_selected_plugins();
-			});
-			
-			jQuery( '.plugins_select input' ).click( function(){
-				bb_count_selected_plugins();
-			});
-			/* End plugins selecting. */
-			
-			
-			
-		});
-
-		function bb_count_selected_tables() {
-			tableCount = jQuery( '.database_contents_select:visible' ).find( 'input:checked' ).length;
-			jQuery( '.database_contents_select_count' ).text( tableCount );
-		}
-		
-		function bb_count_selected_plugins() {
-			pluginCount = jQuery( '.plugins_select:visible' ).find( 'input:checked' ).length;
-			jQuery( '.plugins_select_count' ).text( pluginCount );
-		}
-		
-		bb_count_selected_tables();
-		bb_count_selected_plugins();
-	</script>
+	
 
 	<h3><?php
 		if ( 'pull' == $deployDirection ) {
@@ -195,7 +124,7 @@ $backup_url .= '?page=pb_backupbuddy_backup';
 			_e( 'Push', 'it-l10n-backupbuddy' );
 		}
 		echo ' ';
-		_e( 'Active Plugins', 'LIONS' );
+		_e( 'Differing Active Plugins', 'LIONS' );
 	?></h3>
 	
 	
@@ -207,10 +136,16 @@ $backup_url .= '?page=pb_backupbuddy_backup';
 		<?php
 		if ( 'pull' == $deployDirection ) {
 			foreach( (array)$deployData['remoteInfo']['activePlugins'] as $pluginFile => $plugin ) {
+				if ( ! in_array( $pluginFile, $unmatchedPlugins ) ) { // Plugin same on both sides. Skip asking to send this.
+					continue;
+				}
 				echo '<label><input type="checkbox" name="sendPlugins[]" value="' . $pluginFile . '"> ' . $plugin['name'] . ' v' . $plugin['version'] . '</label><br>';
 			}
 		} else { // push
 			foreach( (array)$localInfo['activePlugins'] as $pluginFile => $plugin ) {
+				if ( ! in_array( $pluginFile, $unmatchedPlugins ) ) { // Plugin same on both sides. Skip asking to send this.
+					continue;
+				}
 				echo '<label><input type="checkbox" name="sendPlugins[]" value="' . $pluginFile . '"> ' . $plugin['name'] . ' v' . $plugin['version'] . '</label><br>';
 			}
 		}

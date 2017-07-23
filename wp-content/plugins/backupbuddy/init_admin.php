@@ -1,6 +1,12 @@
 <?php // This code runs whenever in the wp-admin. pb_backupbuddy::$options preloaded.
 
 
+if ( false !== stristr( pb_backupbuddy::_GET( 'page' ), 'backupbuddy' ) ) {
+	add_action('in_admin_header', 'bb_admin_head');
+}
+function bb_admin_head() {
+	echo '<div class="bb-topbar-title"  style="margin-left: -20px; background: #2ea2cc; font-size: 2em; padding: 20px; color: #fff; font-weight: 100 !important;"><strong style="font-weight: 800 !important;">BACKUP</strong>BUDDY</div>';
+}
 
 /********** MISC **********/
 
@@ -20,14 +26,21 @@ if ( $wp_version >= 3.8 ) {
 }
 
 
-// Enqueue styles for Dashboard Widget
-function enqueue_dashboard_stylesheet($hook) {
-	if( 'index.php' != $hook )
-		return;
-	wp_enqueue_style( 'bub_dashboard_widget', pb_backupbuddy::plugin_url() . '/css/dashboard_widget.css' );
+// Dashboard widget.
+if ( '0' == pb_backupbuddy::$options['hide_dashboard_widget'] ) {
+	// Enqueue styles for Dashboard Widget
+	function enqueue_dashboard_stylesheet($hook) {
+		if( 'index.php' != $hook )
+			return;
+		wp_enqueue_style( 'bub_dashboard_widget', pb_backupbuddy::plugin_url() . '/css/dashboard_widget.css' );
+	}
+	add_action( 'admin_enqueue_scripts', 'enqueue_dashboard_stylesheet' );
+	
+	// Display stats in Dashboard.
+	if ( ( !is_multisite() ) || ( is_multisite() && is_network_admin() ) ) { // Only show if standalone OR in main network admin.
+		pb_backupbuddy::add_dashboard_widget( 'stats', 'BackupBuddy v' . pb_backupbuddy::settings( 'version' ), 'godmode' );
+	}
 }
-add_action( 'admin_enqueue_scripts', 'enqueue_dashboard_stylesheet' );
-
 
 
 // Load backupbuddy class with helper functions.
@@ -86,15 +99,6 @@ add_action( 'wp_ajax_nopriv_backupbuddy_api', array( pb_backupbuddy::$_ajax, 'ap
 
 
 
-/********** DASHBOARD (admin) **********/
-
-
-
-// Display stats in Dashboard.
-if ( ( !is_multisite() ) || ( is_multisite() && is_network_admin() ) ) { // Only show if standalone OR in main network admin.
-	pb_backupbuddy::add_dashboard_widget( 'stats', 'BackupBuddy v' . pb_backupbuddy::settings( 'version' ), 'godmode' );
-}
-
 
 
 /********** FILTERS (admin) **********/
@@ -119,7 +123,7 @@ if ( is_multisite() && backupbuddy_core::is_network_activated() && !defined( 'PB
 			if ( '1' !== pb_backupbuddy::$options['hide_live'] ) {
 				pb_backupbuddy::add_page( 'backup', 'live', __( 'Stash Live', 'it-l10n-backupbuddy' ), 'manage_network' );
 			}
-			pb_backupbuddy::add_page( 'backup', 'migrate_restore', __( 'Migrate, Restore', 'it-l10n-backupbuddy' ), 'manage_network' );
+			pb_backupbuddy::add_page( 'backup', 'migrate_restore', __( 'Restore / Migrate', 'it-l10n-backupbuddy' ), 'manage_network' );
 			pb_backupbuddy::add_page( 'backup', 'destinations', __( 'Remote Destinations', 'it-l10n-backupbuddy' ), 'manage_network' );
 			pb_backupbuddy::add_page( 'backup', 'multisite_import', __( 'MS Import (beta)', 'it-l10n-backupbuddy' ), 'manage_network' );
 			pb_backupbuddy::add_page( 'backup', 'server_tools', __( 'Server Tools', 'it-l10n-backupbuddy' ), 'manage_network' );
@@ -197,8 +201,6 @@ function pb_backupbuddy_contextual_help( $contextual_help, $screen_id, $screen )
 	'title'   => __( 'Tutorials & Support', 'it-l10n-backupbuddy' ),
 	'content' => '<p>
 					<a href="http://ithemes.com/publishing/getting-started-with-backupbuddy/" target="_blank">' . __( 'Getting Started eBook', 'it-l10n-backupbuddy' ) . '</a>
-					<br>
-					<a href="http://ithemes.tv/category/backupbuddy/" target="_blank">' . __( 'Getting Started Videos', 'it-l10n-backupbuddy' ) . '</a>
 					<br>
 					<a href="http://ithemes.com/codex/" target="_blank">' . __( 'Knowledge Base & Tutorials', 'it-l10n-backupbuddy' ) . '</a>
 					<br>
@@ -279,17 +281,14 @@ function backupbuddy_admin_notices() {
 		return;
 	}
 	
-	if ( version_compare( phpversion(), '5.3', '>=' ) ) {
-		if ( is_network_admin() ) {
-			$stashlive_url = network_admin_url( 'admin.php' );
-		} else {
-			$stashlive_url = admin_url( 'admin.php' );
-		}
-		$stashlive_url .= '?page=pb_backupbuddy_live';
-
-		pb_backupbuddy::disalert( 'backupbuddy_version_seven', '<p><span class="backupbuddy-icon-drive"></span>Real-time backups are here. <a class="backupbuddy-nag-button pb_backupbuddy_disalert" href="' . $stashlive_url . '" alt="' . pb_backupbuddy::ajax_url( 'disalert' ) . '">Get Started</a><a class="backupbuddy-nag-button" href="https://ithemes.com/backupbuddy-stash-live-is-here" target="_blank">See What\'s New</a></p>' );
-		wp_enqueue_style( 'backupbuddy_version_seven_style', pb_backupbuddy::plugin_url() . '/css/version_seven.css' );
+	if ( is_network_admin() ) {
+		$stashlive_url = network_admin_url( 'admin.php' );
+	} else {
+		$stashlive_url = admin_url( 'admin.php' );
 	}
+	$stashlive_url .= '?page=pb_backupbuddy_backup';
+	pb_backupbuddy::disalert( 'backupbuddy_version_eight', '<p>BackupBuddy 8.0 is here with new supercharged Backup Profiles.&nbsp;&nbsp;<a class="backupbuddy-nag-button pb_backupbuddy_disalert" href="' . $stashlive_url . '" alt="' . pb_backupbuddy::ajax_url( 'disalert' ) . '">Get Started</a><a class="backupbuddy-nag-button" href="https://ithemes.com/backupbuddy-8-0-is-here" target="_blank">See What\'s New</a></p><span>With BackupBuddy\'s new smart backup profiles, you have granular control over the contents of your backups. Check out new backup profiles to backup themes, plugins and media files, along with new powerful options to customize your backups.  <a href="https://ithemes.com/backupbuddy-8-0-is-here" target="_blank">Read more </a></span>' );
+	wp_enqueue_style( 'backupbuddy_version_eight_style', pb_backupbuddy::plugin_url() . '/css/version_eight.css' );
 }
 if ( ( !is_multisite() ) || ( is_multisite() && is_network_admin() ) ) { // Only show if standalone OR in main network admin.
 	add_action( 'admin_notices', 'backupbuddy_admin_notices' );

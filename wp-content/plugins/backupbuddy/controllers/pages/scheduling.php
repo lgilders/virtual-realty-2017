@@ -75,14 +75,14 @@ function bb_build_remote_destinations( $destinations_list ) {
 			$remote_destinations_html .= '</li>';
 		}
 	}
-	$remote_destinations = '<ul id="pb_backupbuddy_remotedestinations_list">' . $remote_destinations_html . '</ul>';
+	$remote_destinations = '<ul id="pb_backupbuddy_remotedestinations_list" style="margin: 0;">' . $remote_destinations_html . '</ul>';
 	return $remote_destinations;
 }
 
 // EDIT existing schedule.
 if ( pb_backupbuddy::_GET( 'edit' ) != '' ) {
 	$mode = 'edit';
-	$data['mode_title'] = __('Save Schedule', 'it-l10n-backupbuddy' );
+	$data['mode_title'] = __('Edit Schedule', 'it-l10n-backupbuddy' );
 	$savepoint = 'schedules#' . pb_backupbuddy::_GET( 'edit' );
 	
 	$next_run = wp_next_scheduled( 'backupbuddy_cron', array( 'run_scheduled_backup', array( (int)pb_backupbuddy::_GET( 'edit' ) ) ) );
@@ -104,7 +104,7 @@ if ( pb_backupbuddy::_GET( 'edit' ) != '' ) {
 	$savepoint = false;
 	
 	$first_run_value = date('m/d/Y h:i a', time() + ( ( get_option( 'gmt_offset' ) * 3600 ) + 86400 ) );
-	$remote_destinations = '<ul id="pb_backupbuddy_remotedestinations_list"></ul>';
+	$remote_destinations = '<ul id="pb_backupbuddy_remotedestinations_list" style="margin: 0;"></ul>';
 }
 
 
@@ -126,8 +126,14 @@ foreach( pb_backupbuddy::$options['profiles'] as $profile_id => $profile ) {
 		$pretty_type = 'Full';
 	} elseif ( $profile['type'] == 'db' ) {
 		$pretty_type = 'Database Only';
-		} elseif ( $profile['type'] == 'files' ) {
+	} elseif ( $profile['type'] == 'files' ) {
 		$pretty_type = 'Files Only';
+	} elseif ( $profile['type'] == 'plugins' ) {
+		$pretty_type = 'Plugins Only';
+	} elseif ( $profile['type'] == 'themes' ) {
+		$pretty_type = 'Themes Only';
+	} elseif ( $profile['type'] == 'media' ) {
+		$pretty_type = 'Media Only';
 	} else {
 		$pretty_type = 'Unknown';
 	}
@@ -327,8 +333,14 @@ foreach ( pb_backupbuddy::$options['schedules'] as $schedule_id => $schedule ) {
 		$type = 'Files only';
 	} elseif ( $profile['type'] == 'db' ) {
 		$type = 'Database only';
+	} elseif ( $profile['type'] == 'themes' ) {
+		$type = 'Themes only';
+	} elseif ( $profile['type'] == 'plugins' ) {
+		$type = 'Plugins only';
+	} elseif ( $profile['type'] == 'media' ) {
+		$type = 'Media only';
 	} else {
-		$type = 'Unknown (' . $schedule['type'] . ')';
+		$type = 'Unknown: ' . $profile['type'];
 	}
 	$type = $profile['title'] . ' (' . $type . ')';
 	$interval = $schedule['interval'];

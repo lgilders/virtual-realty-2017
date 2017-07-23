@@ -1,7 +1,7 @@
 <?php
 // Incoming vars: $destination, $destination_id
 if ( isset( $destination['disabled'] ) && ( '1' == $destination['disabled'] ) ) {
-	die( __( 'This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.', 'it-l10n-backupbuddy' ) );
+	die( __( '<span class="description">This destination is currently disabled based on its settings. Re-enable it under its Advanced Settings.</span>', 'it-l10n-backupbuddy' ) );
 }
 
 //pb_backupbuddy::$ui->title( 'Deployment' );
@@ -95,6 +95,17 @@ $deploy = new backupbuddy_deploy( $destination, '', $destination_id );
 	.tdhead {
 		font-weight: bold;
 	}
+	.deploy-unmatched-plugin {
+		color: red;
+	}
+	.deploy-unmatched-plugin-version {
+		color: blue;
+	}
+	.deploy-files-list-box {
+		display: block;
+		width: 100%;
+		height: 200px;
+	}
 </style>
 
 
@@ -153,9 +164,17 @@ if ( false === $status ) {
 		<td><?php echo $deploy->_state['destination']['siteurl']; ?></td>
 		<?php if ( true === $siteUp ) { ?>
 			<td class="deploy-pushpull-wrap">
-				<a href="javascript:void(0);" class="deploy-push-text" onClick="jQuery( '.deploy-type-selected' ).removeClass( 'deploy-type-selected' ); jQuery(this).addClass( 'deploy-type-selected' ); jQuery('#deploy-pull-wrap').hide(); jQuery('#deploy-push-wrap').slideDown(); jQuery('#backupbuddy_deploy_direction').attr('data-direction','push' ); jQuery( '.database_contents_shortcuts-prefix' ).click(); jQuery( '.plugins_shortcuts-none' ).click();">Push to</a>
+				<?php if ( isset( $destination['disable_push'] ) && ( '1' == $destination['disable_push'] ) ) { ?>
+					<s><a href="javascript:void(0);" class="deploy-push-text" onClick="alert( 'This option is disabled in this destination\'s settings.' );">Push to</a></s>
+				<?php } else { ?>
+					<a href="javascript:void(0);" class="deploy-push-text" onClick="jQuery( '.deploy-type-selected' ).removeClass( 'deploy-type-selected' ); jQuery(this).addClass( 'deploy-type-selected' ); jQuery('#deploy-pull-wrap').hide(); jQuery('#deploy-push-wrap').slideDown(); jQuery('#backupbuddy_deploy_direction').attr('data-direction','push' ); jQuery( '.database_contents_shortcuts-prefix' ).click(); jQuery( '.plugins_shortcuts-none' ).click();">Push to</a>
+				<?php } ?>
 				&nbsp;|&nbsp;
-				<a href="javascript:void(0);" class="deploy-pull-text" onClick="jQuery( '.deploy-type-selected' ).removeClass( 'deploy-type-selected' ); jQuery(this).addClass( 'deploy-type-selected' ); jQuery('#deploy-push-wrap').hide(); jQuery('#deploy-pull-wrap').slideDown(); jQuery('#backupbuddy_deploy_direction').attr('data-direction','pull' ); jQuery( '.database_contents_shortcuts-prefix' ).click(); jQuery( '.plugins_shortcuts-none' ).click();">Pull from</a>
+				<?php if ( isset( $destination['disable_pull'] ) && ( '1' == $destination['disable_pull'] ) ) { ?>
+					<s><a href="javascript:void(0);" class="deploy-pull-text" onClick="alert( 'This option is disabled in this destination\'s settings.' );">Pull from</a></s>
+				<?php } else { ?>
+					<a href="javascript:void(0);" class="deploy-pull-text" onClick="jQuery( '.deploy-type-selected' ).removeClass( 'deploy-type-selected' ); jQuery(this).addClass( 'deploy-type-selected' ); jQuery('#deploy-push-wrap').hide(); jQuery('#deploy-pull-wrap').slideDown(); jQuery('#backupbuddy_deploy_direction').attr('data-direction','pull' ); jQuery( '.database_contents_shortcuts-prefix' ).click(); jQuery( '.plugins_shortcuts-none' ).click();">Pull from</a>
+				<?php } ?>
 			</td>
 		<?php } ?>
 	</tr>
@@ -170,7 +189,7 @@ if ( false === $status ) {
 
 $deployData = $deploy->getState();
 $deployDataJson = json_encode( $deployData );
-echo '<script>console.log("deployData (len: ' . strlen( $deployDataJson ) . '):"); console.dir(' . $deployDataJson . ');</script>';
+echo '<script>window.deployData = ' . $deployDataJson . '; console.log("deployData (len: ' . strlen( $deployDataJson ) . '):"); console.dir( window.deployData );</script>';
 
 
 
@@ -180,37 +199,75 @@ if ( '' != $errorMessage ) {
 
 
 
+$unmatchedPlugins = array();
 
 
-$activePluginsA = 'BackupBuddy v' . $localInfo['backupbuddyVersion'] . '<span style="position: relative; top: -0.5em; font-size: 0.7em;">&Dagger;</span>'; // Start with BB. Is only in the visual list. Will not be deployed.
+if ( $localInfo['backupbuddyVersion'] != $deployData['remoteInfo']['backupbuddyVersion'] ) {
+	$wrapBefore = '<span class="deploy-unmatched-plugin-version">';
+	$wrapAfter = '</span>';
+}
+$activePluginsA = $wrapBefore . 'BackupBuddy v' . $localInfo['backupbuddyVersion'] . $wrapAfter . '<span style="position: relative; top: -0.5em; font-size: 0.7em;">&Dagger;</span>'; // Start with BB. Is only in the visual list. Will not be deployed.
 $i = 0; $x = count( $localInfo['activePlugins'] );
 foreach( (array)$localInfo['activePlugins'] as $index => $localPlugin ) {
 	if ( 0 == $i ) {
 		$activePluginsA .= ', ';
 	}
 	$i++;
-	$activePluginsA .= $localPlugin['name'] . ' v' . $localPlugin['version'];
+	
+	$wrapBefore = '';
+	$wrapAfter = '';
+	if ( ! isset( $deployData['remoteInfo']['activePlugins'][ $index ] ) ) { // Plugin is not on remote site.
+		$unmatchedPlugins[] = $index;
+		$wrapBefore = '<span class="deploy-unmatched-plugin">';
+		$wrapAfter = '</span>';
+	} else { // Plugin is on remote site. Check if version differs.
+		if ( $deployData['remoteInfo']['activePlugins'][ $index ]['version'] != $localPlugin['version'] ) {
+			$unmatchedPlugins[] = $index;
+			$wrapBefore = '<span class="deploy-unmatched-plugin-version">';
+			$wrapAfter = '</span>';
+		}
+	}
+	
+	$activePluginsA .= $wrapBefore . $localPlugin['name'] . ' v' . $localPlugin['version'] . $wrapAfter;
 	if ( $x > $i ) {
 		$activePluginsA .= ', ';
 	}
 	
 	/*
 	if ( false !== strpos( $localPlugin['name'], 'BackupBuddy' ) ) {
-		echo 'bbmoose';
 		unset( $localInfo['activePlugins'][ $index ] );
 	}
 	*/
 }
 
 
-$activePluginsB = 'BackupBuddy v' . $deployData['remoteInfo']['backupbuddyVersion'] . '<span style="position: relative; top: -0.5em; font-size: 0.7em;">&Dagger;</span>'; // Start with BB. Is only in the visual list. Will not be deployed.
+if ( $localInfo['backupbuddyVersion'] != $deployData['remoteInfo']['backupbuddyVersion'] ) {
+	$wrapBefore = '<span class="deploy-unmatched-plugin-version">';
+	$wrapAfter = '</span>';
+}
+$activePluginsB = $wrapBefore . 'BackupBuddy v' . $deployData['remoteInfo']['backupbuddyVersion'] . $wrapAfter . '<span style="position: relative; top: -0.5em; font-size: 0.7em;">&Dagger;</span>'; // Start with BB. Is only in the visual list. Will not be deployed.
 $i = 0; $x = count( $deployData['remoteInfo']['activePlugins'] );
 foreach( (array)$deployData['remoteInfo']['activePlugins'] as $index => $remotePlugin ) {
 	if ( 0 == $i ) {
 		$activePluginsB .= ', ';
 	}
 	$i++;
-	$activePluginsB .= $remotePlugin['name'] . ' v' . $remotePlugin['version'];
+	
+	$wrapBefore = '';
+	$wrapAfter = '';
+	if ( ! isset( $localInfo['activePlugins'][ $index ] ) ) { // Plugin is not on local site.
+		$unmatchedPlugins[] = $index;
+		$wrapBefore = '<span class="deploy-unmatched-plugin">';
+		$wrapAfter = '</span>';
+	} else { // Plugin is on local site. Check if version differs.
+		if ( $localInfo['activePlugins'][ $index ]['version'] != $remotePlugin['version'] ) {
+			$unmatchedPlugins[] = $index;
+			$wrapBefore = '<span class="deploy-unmatched-plugin-version">';
+			$wrapAfter = '</span>';
+		}
+	}
+	
+	$activePluginsB .= $wrapBefore . $remotePlugin['name'] . ' v' . $remotePlugin['version'] . $wrapAfter;
 	if ( $x > $i ) {
 		$activePluginsB .= ', ';
 	}
@@ -237,6 +294,101 @@ foreach( (array)$deployData['remoteInfo']['activePlugins'] as $index => $remoteP
 
 <div id="deploy-pull-wrap" style="display: none;">
 	<?php require_once( '_pull.php' ); ?>
+</div>
+
+
+
+
+<script>
+		jQuery(document).ready(function() {
+			
+			jQuery( '.deploy-show-files' ).click( function(){
+				if ( jQuery('.deploy-files-list-box:visible').length > 0 ) {
+					jQuery('.deploy-files-list-box:visible').remove();
+					return;
+				}
+				jQuery(this).after( jQuery('#bb_deploy_files').html() );
+				jQuery(this).next( '.deploy-files-list-box' ).val( window.deployData[ jQuery(this).attr('rel') ].join( "\n" ) );
+			});
+			
+			/* Begin database contents selecting */
+			jQuery( '.database_contents_shortcuts-all' ).click( function(e){
+				e.preventDefault();
+				jQuery( '.database_contents_select' ).find( 'input' ).prop( 'checked', true );
+				bb_count_selected_tables();
+			});
+			
+			jQuery( '.database_contents_shortcuts-none' ).click( function(e){
+				e.preventDefault();
+				jQuery( '.database_contents_select' ).find( 'input' ).prop( 'checked', false );
+				bb_count_selected_tables();
+			});
+			
+			jQuery( '.database_contents_select input' ).click( function(){
+				bb_count_selected_tables();
+			});
+			
+			jQuery( '.database_contents_shortcuts-prefix' ).click( function(e){
+				e.preventDefault();
+				
+				if ( 'push' == jQuery('#backupbuddy_deploy_direction').attr( 'data-direction' ) ) {
+					prefix = jQuery( '#backupbuddy_deploy_prefixA' ).attr( 'data-prefix' );
+				} else {
+					prefix = jQuery( '#backupbuddy_deploy_prefixB' ).attr( 'data-prefix' );
+				}
+				
+				jQuery( '.database_contents_select' ).find( 'input' ).each( function(index){
+					if ( jQuery(this).val().indexOf( prefix ) == 0 ) {
+						jQuery(this).prop( 'checked', true );
+					} else {
+						jQuery(this).prop( 'checked', false );
+					}
+				});
+				
+				bb_count_selected_tables();
+			});
+			/* End database contents selecting. */
+			
+			
+			
+			/* Begin plugins selecting. */
+			jQuery( '.plugins_shortcuts-all' ).click( function(e){
+				e.preventDefault();
+				jQuery( '.plugins_select' ).find( 'input' ).prop( 'checked', true );
+				bb_count_selected_plugins();
+			});
+			
+			jQuery( '.plugins_shortcuts-none' ).click( function(e){
+				e.preventDefault();
+				jQuery( '.plugins_select' ).find( 'input' ).prop( 'checked', false );
+				bb_count_selected_plugins();
+			});
+			
+			jQuery( '.plugins_select input' ).click( function(){
+				bb_count_selected_plugins();
+			});
+			/* End plugins selecting. */
+			
+			
+			
+		});
+
+		function bb_count_selected_tables() {
+			tableCount = jQuery( '.database_contents_select:visible' ).find( 'input:checked' ).length;
+			jQuery( '.database_contents_select_count' ).text( tableCount );
+		}
+		
+		function bb_count_selected_plugins() {
+			pluginCount = jQuery( '.plugins_select:visible' ).find( 'input:checked' ).length;
+			jQuery( '.plugins_select_count' ).text( pluginCount );
+		}
+		
+		bb_count_selected_tables();
+		bb_count_selected_plugins();
+	</script>
+
+<div id="bb_deploy_files" style="display: none;">
+	<textarea readonly="readonly" class="deploy-files-list-box"></textarea>
 </div>
 
 

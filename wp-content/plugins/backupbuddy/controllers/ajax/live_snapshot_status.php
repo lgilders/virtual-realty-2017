@@ -11,7 +11,7 @@ $additionalParams = array(
 require_once( pb_backupbuddy::plugin_path() . '/destinations/live/init.php' );
 $response = pb_backupbuddy_destination_live::stashAPI( $destination_settings, 'live-snapshot-status', $additionalParams );
 if ( ! is_array( $response ) ) {
-	$error = 'Error #3497943: Unable to get Live snapshot status. Details: `' . $response . '`.';
+	$error = 'Error #3497943a: Unable to get Live snapshot status. Details: `' . $response . '`.';
 	pb_backupbuddy::status( 'error', $error );
 	die( $error );
 } else {

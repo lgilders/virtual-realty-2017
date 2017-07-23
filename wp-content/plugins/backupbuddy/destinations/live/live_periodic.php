@@ -110,15 +110,14 @@ class backupbuddy_live_periodic {
 
 	// Default signatures in the catalog.
 	private static $_signatureDefaults = array(
-		'a' => 0,	// Added timestamp. (int)
 		'r' => 0,	// Rescan/refresh timestamp (int).
 		'm' => 0,	// Modified timestamp based on file mtime, NOT timestamp when signature was updated. (int)
 		's' => 0,	// Size in bytes. (int)
-		'h' => '',	// Hash. (string)
+		//'h' => '',	// Hash. (string). NOTE: As of v8 omitted unless being used to save catalog mem.
 		'b' => 0,	// Backed up to Live server time. 0 if NOT backed up to server yet.
 		'v' => 0,	// Verified via audit timestamp.
-		't' => 0,	// Tries sending. AKA Transfer attempts.
-		'd' => false, // Pending deletion.
+		//'t' => 0,	// Tries sending. AKA Transfer attempts. NOTE: As of v8 omitted unless being used to save catalog mem.
+		//'d' => false, // Pending deletion. NOTE: As of v8 omitted unless being used to save catalog mem.
 	);
 	
 	// Default table entries in the catalog.
@@ -158,6 +157,8 @@ class backupbuddy_live_periodic {
 		
 	);
 	
+	
+	private static $_fileVars = null;
 	
 	/* run_periodic_process()
 	 *
@@ -346,8 +347,9 @@ class backupbuddy_live_periodic {
 		// Save state.
 		if ( ! is_object( self::$_stateObj ) ) {
 			pb_backupbuddy::status( 'warning', 'State object not expected type. Type: `' . gettype( self::$_stateObj ) . '`. Printed: `' . print_r( self::$_stateObj, true ) . '`.' );
+		} else {
+			self::$_stateObj->save();
 		}
-		self::$_stateObj->save();
 		
 		
 		// Unlock fileoptions files if any remain locked.
@@ -991,7 +993,6 @@ class backupbuddy_live_periodic {
 					// Table is not yet in the catalog.
 					if ( ! isset( self::$_tables[ $table ] ) ) {
 						self::$_tables[ $table ] = self::$_tableDefaults; // Apply defaults.
-						self::$_tables[ $table ]['a'] = self::$_state['stats']['last_db_snapshot'];
 						self::$_tables[ $table ]['m'] = self::$_state['stats']['last_db_snapshot'];
 					} else { // Table already in catalog. Update it.
 						self::$_tables[ $table ] = array_merge( self::$_tableDefaults, self::$_tables[ $table ] ); // Apply defaults to existing data.
@@ -1115,7 +1116,11 @@ class backupbuddy_live_periodic {
 		}
 		if ( false === $files[0] ) { // Format when chunking: array( $finished = false, array( $startAt, $items ) )
 			pb_backupbuddy::status( 'details', 'Deep file scan requires chunking.' );
-			return array( 'File scanning', array( $custom_root, $files[1][0], $files[1][1] ) );
+			$startAtNext = 0;
+			if ( isset( $files[1][0] ) ) {
+				$startAtNext = $files[1][0];
+			}
+			return array( 'File scanning', array( $custom_root, $startAtNext, $files[1][1] ) );
 		} else {
 			pb_backupbuddy::status( 'details', 'Deep file scan complete.' );
 		}
@@ -1149,7 +1154,6 @@ class backupbuddy_live_periodic {
 					self::$_state['stats']['files_total_count']++;
 				}
 				self::$_catalog[ $pathed_file ] = self::$_signatureDefaults;
-				self::$_catalog[ $pathed_file ]['a'] = microtime( true );
 				$filesAdded++;
 				self::$_state['stats']['files_pending_send']++;
 				
@@ -1172,14 +1176,14 @@ class backupbuddy_live_periodic {
 				}
 			} else { // Already exists in catalog.
 				if ( 0 == self::$_catalog[ $pathed_file ]['b'] ) { // File not backed up to server yet (pending send).
-					if ( true !== self::$_catalog[ $pathed_file ]['d'] ) { // Not pending deletion already.
+					if ( !isset( self::$_catalog[ $pathed_file ]['d'] ) || ( true !== self::$_catalog[ $pathed_file ]['d'] ) ) { // Not pending deletion already.
 						if ( '' == $custom_root ) { // Only increment existing files if scanning from root (because stats were reset for fresh count).
 							self::$_state['stats']['files_pending_send']++;
 						}
 					}
 				} else { // Local file already exists in catalog and on server. Make sure not marked for deletion.
-					if ( true === self::$_catalog[ $pathed_file ]['d'] ) { // Was marked to delete. Remove deltion mark BUT do rescan in case this is a new version of the file since it was for some reason marked to delete.
-						self::$_catalog[ $pathed_file ]['d'] = false; // Don't immediately delete.
+					if ( isset( self::$_catalog[ $pathed_file ]['d'] ) && ( true === self::$_catalog[ $pathed_file ]['d'] ) ) { // Was marked to delete. Remove deltion mark BUT do rescan in case this is a new version of the file since it was for some reason marked to delete.
+						unset( self::$_catalog[ $pathed_file ]['d'] ); // Don't immediately delete. (unset to save mem)
 						self::$_catalog[ $pathed_file ]['r'] = 0; // Reset last scan time so it gets re-checked.
 					}
 				}
@@ -1191,7 +1195,7 @@ class backupbuddy_live_periodic {
 		$filesDeleted = 0;
 		//$sinceLogTrim = 0;
 		foreach( self::$_catalog as $signatureFile => &$signatureDetails ) {
-			if ( true === $signatureDetails['d'] ) { // Already marked for deletion.
+			if ( isset( $signatureDetails['d'] ) && ( true === $signatureDetails['d'] ) ) { // Already marked for deletion.
 				continue;
 			}
 			if ( '' != $custom_root ) { // Custom root. Ignore removing any files not within the custom root since we did not scan those so they are not in the $files array.
@@ -1273,7 +1277,7 @@ class backupbuddy_live_periodic {
 			
 			
 			// Check if file is already set to delete.
-			if ( true === $signatureDetails['d'] ) { // File already set to delete. Skip.
+			if ( isset( $signatureDetails['d'] ) && ( true === $signatureDetails['d'] ) ) { // File already set to delete. Skip.
 				continue; // Skip to next file.
 			}
 			
@@ -1320,6 +1324,17 @@ class backupbuddy_live_periodic {
 			$filesUpdated++;
 			$signatureDetails['r'] = time(); // Update time last rescanned.
 			
+			// NOTE: v8 cleanup of unused $signatureDetails['t'] and 'h' hash when set to default. TODO: In the future remove this cleanup as it will no longer be needed. Eg. v9?
+			if ( ( isset( $signatureDetails['t'] ) ) && ( 0 == $signatureDetails['t'] ) ) {
+				unset( $signatureDetails['t'] );
+			}
+			if ( ( isset( $signatureDetails['h'] ) ) && ( '' == $signatureDetails['h'] ) ) {
+				unset( $signatureDetails['h'] );
+			}
+			if ( isset( $signatureDetails['a'] ) ) { // Remove entirely.
+				unset( $signatureDetails['a'] );
+			}
+
 			// If the file changed then set as NOT uploaded so we will send a new copy.
 			if ( ( $signatureDetails['m'] != $stat['mtime'] ) || ( $signatureDetails['s'] != $stat['size'] ) ) {
 				if ( 0 != $signatureDetails['b'] ) { // If not already set to send then increase to-send stats.
@@ -1328,7 +1343,7 @@ class backupbuddy_live_periodic {
 				}
 				$filesDetectedChanged++;
 				$signatureDetails['b'] = 0; // Current version is NOT backed up.
-				$signatureDetails['t'] = 0; // Reset try (send attempt) counter back to zero since this version has not been attempted.
+				unset( $signatureDetails['t'] ); // Reset try (send attempt) counter back to zero by clearing (to save mem) since this version has not been attempted.
 				// If we made it here then the filesize number changed.  If the stored previous size was non-zero then this means we need to update the total file size sum stats for the difference.
 				if ( 0 != $signatureDetails['s'] ) { // Don't subtract if it was never added in before.
 					self::$_state['stats']['files_total_size'] = self::$_state['stats']['files_total_size'] - $signatureDetails['s']; // Subtract old size. New size was already summed above.
@@ -1353,7 +1368,7 @@ class backupbuddy_live_periodic {
 							// File needs re-sent since missing on remote server. Made it here then the following must apply: file is not already set to backup, the last audit that started has indeed finished, the file was already marked as sent prior to the last audit start, the file is not marked for deletion (would not have made it to this block of code) and the verification key timestamp is before the last audit began (or zero which is the same) so it should have existed during the audit.
 							$signatureDetails['v'] = 0; // Reset audit timestamp.
 							$signatureDetails['b'] = 0; // Reset backup timestamp since we know it's not backed up.
-							$signatureDetails['t'] = 0; // Reset try (send attempt) counter.
+							unset( $signatureDetails['t'] ); // Reset try (send attempt) counter.
 							self::$_state['stats']['files_pending_send']++; // Update files pending send counter.
 							
 							$filesNeedingResendFromIffyAudit++;
@@ -1425,8 +1440,13 @@ class backupbuddy_live_periodic {
 			}
 			$checkCount++;
 			
+			// NOTE: BB v8 cleanup removes default false to conserve memory. TODO: Remove at BB v9.
+			if ( isset( $signatureDetails['d'] ) && ( false === $signatureDetails['d'] ) ) {
+				unset( $signatureDetails['d'] );
+			}
+
 			// Skip non-deleted files.
-			if ( true !== $signatureDetails['d'] ) {
+			if ( !isset( $signatureDetails['d'] ) || ( true !== $signatureDetails['d'] ) ) {
 				continue;
 			}
 			
@@ -1642,7 +1662,7 @@ class backupbuddy_live_periodic {
 			}
 			
 			// If too many attempts have passed then skip.
-			if ( $signatureDetails['t'] >= self::MAX_SEND_ATTEMPTS ) {
+			if ( isset( $signatureDetails['t'] ) && ( $signatureDetails['t'] >= self::MAX_SEND_ATTEMPTS ) ) {
 				$tooManyAttempts++;
 				continue;
 			}
@@ -1692,7 +1712,11 @@ class backupbuddy_live_periodic {
 				// Moved into trim_remote_send_stats(). backupbuddy_housekeeping::purge_logs( $file_prefix = 'status-remote_send-live_', $limit = $destination_settings['max_send_details_limit'] ); // Only keep last 5 send logs.
 				
 				// Increment try count for transfer attempts and save.
-				$signatureDetails['t']++;
+				if ( isset( $signatureDetails['t'] ) ) {
+					$signatureDetails['t']++;
+				} else {
+					$signatureDetails['t'] = 1;
+				}
 				self::$_catalogObj->save();
 				
 				// Save position in case process starts over to prevent race conditions resulting in double send of files.
@@ -1749,7 +1773,7 @@ class backupbuddy_live_periodic {
 						//$lastSendThisPass = true;
 						// TODO: Ideally at this point we would have Live sleep until the large chunked file finished sending.
 					}
-					pb_backupbuddy::status( 'details', 'Live ended send files function. Status: ' . $result_status . '.' );
+					pb_backupbuddy::status( 'details', 'Live ended send files function. Status: ' . $result_status . '. sendAttemptCount: ' . $sendAttemptCount );
 				} // end file exists.
 			}
 			
@@ -1763,7 +1787,7 @@ class backupbuddy_live_periodic {
 		pb_backupbuddy::status( 'warning', 'Warning: Skipped due to lacking signature data: `' . $lackSignatureData . '`. If this is temporary it is normal. If this persists there may be permissions blocking reading file details.' );
 		
 		if ( $tooManyAttempts > 0 ) {
-			$warning = 'Warning #5003. `' . $tooManyAttempts . '` files were skipped due to too many send attempts failing. Check the Remote Destinations page\'s Recently sent files list to check for errors of failed sends. To manually reset sends Pause the Files process and wait for it to finish, then select the Advanced Troubleshooting Option to \'Reset Send Attempts\'.';
+			$warning = 'Warning #5003. `' . $tooManyAttempts . '` files were skipped due to too many send attempts failing. Check the Destinations page\'s Recently sent files list to check for errors of failed sends. To manually reset sends Pause the Files process and wait for it to finish, then select the Advanced Troubleshooting Option to \'Reset Send Attempts\'.';
 			pb_backupbuddy::status( 'warning', $warning );
 			backupbuddy_core::addNotification( 'live_error', 'BackupBuddy Stash Live Error', $warning );
 		}
@@ -1822,6 +1846,8 @@ class backupbuddy_live_periodic {
 		}
 		
 		self::$_stateObj->save();
+		
+		$found_dat = false;
 		
 		$loopCount = 0;
 		$loopStart = microtime( true );
@@ -1907,7 +1933,7 @@ class backupbuddy_live_periodic {
 					
 				} else { // Remotely stored file found in local catalog. Updated verified audit timestamp.
 					// Update 'v' key (for verified) with current timestamp to show it is verified as being on remote server.
-					self::$_catalog[ '/' . $file['Key'] ]['v'] = microtime( true );
+					self::$_catalog[ '/' . $file['Key'] ]['v'] = time();
 				}
 			}
 			
@@ -2085,7 +2111,11 @@ class backupbuddy_live_periodic {
 		require_once( pb_backupbuddy::plugin_path() . '/classes/core.php' );
 		
 		if ( ( true !== $force_load ) && ( is_object( self::$_stateObj ) ) ) {
-			return true;
+			if ( true === $get_contents_only ) {
+				return self::$_stateObj->options;
+			} else {
+				return true;
+			}
 		}
 		
 		if ( true === $get_contents_only ) {
@@ -2102,7 +2132,12 @@ class backupbuddy_live_periodic {
 		require_once( pb_backupbuddy::plugin_path() . '/classes/fileoptions.php' );
 		$stateObj = new pb_backupbuddy_fileoptions( backupbuddy_core::getLogDirectory() . 'live/state-' . pb_backupbuddy::$options['log_serial'] . '.txt', $read_only, $ignore_lock, $create_file = true );
 		if ( true !== ( $result = $stateObj->is_ok() ) ) {
-			pb_backupbuddy::status( 'error', 'Error #3297392. Fatal error. Unable to create or access SERIAL fileoptions file. Details: `' . $result . '`. Waiting a moment before ending. Read only: `' . $read_only . '`, ignore lock: `' . $ignore_lock . '`, contents only: `' . $get_contents_only . '`. Caller: `' . backupbuddy_core::getCallingFunctionName() . '`.' );
+			$caller = backupbuddy_core::getCallingFunctionName();
+			if ( 'backupbuddy_live_periodic::_get_daily_stats_ref()' == $caller ) { // Don't log as error if it's just from stats not being able to load state as this can happen due to state being locked a lot during rapid activity.
+				//pb_backupbuddy::status( 'warning', 'Warning #3297392A. This MAY BE NORMAL due to Stash Live being very busy. Unable to create or access SERIAL fileoptions file. Details: `' . $result . '`. Waiting a moment before ending. Read only: `' . $read_only . '`, ignore lock: `' . $ignore_lock . '`, contents only: `' . $get_contents_only . '`. Caller: `' . $caller . '`.' );
+			} else {
+				pb_backupbuddy::status( 'error', 'Error #3297392B. Fatal error. Unable to create or access SERIAL fileoptions file. Details: `' . $result . '`. Waiting a moment before ending. Read only: `' . $read_only . '`, ignore lock: `' . $ignore_lock . '`, contents only: `' . $get_contents_only . '`. Caller: `' . $caller . '`.' );
+			}
 			sleep( 3 ); // Wait a moment to give time for temporary issues to resolve.
 			return false;
 		}
@@ -2277,7 +2312,7 @@ class backupbuddy_live_periodic {
 			} elseif ( 'importbuddy.php' == $database_tables ) {
 				return true;
 			}
-			self::$_tables[ $database_tables ]['b'] = microtime( true ); // Time backed up to server.
+			self::$_tables[ $database_tables ]['b'] = time(); // Time backed up to server.
 			self::$_tables[ $database_tables ]['t'] = 0; // Reset try (send attempt) counter back to zero since it succeeded.
 			
 			self::$_state['stats']['tables_pending_send']--;
@@ -2292,8 +2327,8 @@ class backupbuddy_live_periodic {
 			
 			self::$_tablesObj->save();
 		} else { // Normal file.
-			self::$_catalog[ $file ]['b'] = microtime( true ); // Time backed up to server.
-			self::$_catalog[ $file ]['t'] = 0; // Reset try (send attempt) counter back to zero since it succeeded.
+			self::$_catalog[ $file ]['b'] = time(); // Time backed up to server.
+			unset( self::$_catalog[ $file ]['t'] ); // Reset try (send attempt) counter back to zero since it succeeded.
 			
 			self::$_state['stats']['files_pending_send']--;
 			if ( self::$_state['stats']['files_pending_send'] < 0 ) { // Don't go below zero. :)
@@ -2384,12 +2419,18 @@ class backupbuddy_live_periodic {
 			$waitingListLimit = 5;
 			
 			// Show some of the files pending send for troubleshooting.
+			$files_pending_send_file = backupbuddy_core::getLogDirectory() . 'live/files_pending_send-' . pb_backupbuddy::$options['log_serial'] . '.txt';
 			if ( self::$_state['stats']['files_pending_send'] > 0 ) {
+				pb_backupbuddy::status( 'details', 'Files pending send (`' . count( self::$_state['stats']['tables_pending_send'] ) . '`).' );
 				if ( false !== self::_load_catalog() ) {
 					$waitingFileList = array();
 					foreach( self::$_catalog as $catalogFilename => $catalogFile ) {
 						if ( 0 == $catalogFile['b'] ) { // Not yet transferred.
-							$waitingFileList[] = $catalogFilename . ' (' . $catalogFile['t'] . ' send tries)';
+							$tries = 0;
+							if ( isset( $catalogFile['t'] ) ) {
+								$tries = $catalogFile['t'];
+							}
+							$waitingFileList[] = $catalogFilename . ' (' . $tries . ' send tries)';
 						}
 						if ( count( $waitingFileList ) > $waitingListLimit ) {
 							break;
@@ -2398,7 +2439,6 @@ class backupbuddy_live_periodic {
 					if ( count( $waitingFileList ) > 0 ) {
 						pb_backupbuddy::status( 'details', 'List of up to `' . $waitingListLimit . '` of `' . self::$_state['stats']['files_pending_send'] . '` pending file sends: ' . implode( '; ', $waitingFileList ) );
 						
-						$files_pending_send_file = backupbuddy_core::getLogDirectory() . 'live/files_pending_send-' . pb_backupbuddy::$options['log_serial'] . '.txt';
 						if ( false === @file_put_contents( $files_pending_send_file, implode( "\n", $waitingFileList ) ) ) {
 							// Unable to write.
 						}
@@ -2406,10 +2446,16 @@ class backupbuddy_live_periodic {
 				} else {
 					pb_backupbuddy::status( 'details', 'Catalog not ready for preview of pending file list. Skipping.' );
 				}
+			} else { // No files pending. Deleting/wiping pending file.
+				pb_backupbuddy::status( 'details', 'No files pending send. Wiping.' );
+				@file_put_contents( $tables_pending_send_file, '' );
+				@unlink( $files_pending_send_file );
 			}
 			
 			// Show some of the tables pending send for troubleshooting.
+			$tables_pending_send_file = backupbuddy_core::getLogDirectory() . 'live/tables_pending_send-' . pb_backupbuddy::$options['log_serial'] . '.txt';
 			if ( self::$_state['stats']['tables_pending_send'] > 0 ) {
+				pb_backupbuddy::status( 'details', 'Tables pending send (`' . count( self::$_state['stats']['tables_pending_send'] ) . '`).' );
 				if ( false !== self::_load_tables() ) {
 					$waitingTableList = array();
 					foreach( self::$_tables as $tableName => $table ) {
@@ -2423,7 +2469,6 @@ class backupbuddy_live_periodic {
 					if ( count( $waitingTableList ) > 0 ) {
 						pb_backupbuddy::status( 'details', 'List of up to `' . $waitingListLimit . '` of `' . self::$_state['stats']['tables_pending_send'] . '` pending table sends: ' . implode( '; ', $waitingTableList ) );
 						
-						$tables_pending_send_file = backupbuddy_core::getLogDirectory() . 'live/tables_pending_send-' . pb_backupbuddy::$options['log_serial'] . '.txt';
 						if ( false === @file_put_contents( $tables_pending_send_file, implode( "\n", $waitingTableList ) ) ) {
 							// Unable to write.
 						}
@@ -2431,6 +2476,10 @@ class backupbuddy_live_periodic {
 				} else {
 					pb_backupbuddy::status( 'details', 'Table catalog not ready for preview of pending table list. Skipping.' );
 				}
+			} else { // No tables pending send. Deleting/wiping pending file.'
+				pb_backupbuddy::status( 'details', 'No tables pending send. Wiping.' );
+				@file_put_contents( $tables_pending_send_file, '' );
+				@unlink( $tables_pending_send_file );
 			}
 			
 			backupbuddy_live::queue_step( $step = 'wait_on_transfers', $args = array(), $skip_run_now = true );
@@ -2749,8 +2798,8 @@ class backupbuddy_live_periodic {
 		}
 		
 		foreach( self::$_catalog as $signatureFile => &$signatureDetails ) {
-			if ( $signatureDetails['t'] > 0 ) {
-				$signatureDetails['t'] = 0;
+			if ( isset( $signatureDetails['t'] ) ) {
+				unset( $signatureDetails['t'] );
 			}
 		}
 		
@@ -2914,6 +2963,45 @@ class backupbuddy_live_periodic {
 		
 	} // End shutdown_function.
 	
+	
+	
+	public static function _calculateFileVars() {
+		self::$_fileVars = array(
+			'{t}' => str_replace( ABSPATH, '', backupbuddy_core::get_themes_root() ),
+			'{p}' => str_replace( ABSPATH, '', backupbuddy_core::get_plugins_root() ),
+			'{m}' => str_replace( ABSPATH, '', backupbuddy_core::get_media_root() ),
+		);
+	}
+	
+	
+	
+	// Replaced variables with file paths.
+	public static function _varToFile( $string ) {
+		if ( null === self::$_fileVars ) {
+			self::_calculateFileVars();
+		}
+		
+		foreach( self::$_fileVars as $fileVar => $fileValue ) {
+			$string = str_replace( $fileVar, $fileValue, $string );
+		}
+		
+		return $string;
+	}
+	
+	
+	// Replaces file paths with variables.
+	public static function _fileToVar( $string ) {
+		if ( null === self::$_fileVars ) {
+			self::_calculateFileVars();
+		}
+		
+		
+		foreach( self::$_fileVars as $fileVar => $fileValue ) {
+			$string = str_replace( $fileValue, $fileVar, $string );
+		}
+		
+		return $string;
+	}
 	
 	
 	public static function get_signature_defaults() {

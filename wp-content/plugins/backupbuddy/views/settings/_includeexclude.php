@@ -104,19 +104,10 @@ echo '<h3>Editing Profile "' . pb_backupbuddy::$options['profiles'][$profile]['t
 $settings_form = new pb_backupbuddy_settings( 'profile_settings', '', 'action=pb_backupbuddy_backupbuddy&function=profile_settings&profile=' . $profile, 320 );
 
 
-if ( pb_backupbuddy::$options['profiles'][$profile]['type'] == 'db' ) {
-	$prettyType = __( 'Database Only', 'it-l10n-backupbuddy' );
-} elseif ( pb_backupbuddy::$options['profiles'][$profile]['type'] == 'full' ) {
-	$prettyType = __( 'Full', 'it-l10n-backupbuddy' );
-} elseif( pb_backupbuddy::$options['profiles'][$profile]['type'] == 'files' ) {
-	$prettyType = __( 'Files Only', 'it-l10n-backupbuddy' );
-} else {
-	$prettyType = 'unknown(' . htmlentities( pb_backupbuddy::$options['profiles'][$profile]['type'] ). ')';
-}
 $settings_form->add_setting( array(
 	'type'		=>		'title',
 	'name'		=>		'title_type',
-	'title'		=>		$prettyType . ' Profile',
+	'title'		=>		backupbuddy_core::pretty_backup_type( pb_backupbuddy::$options['profiles'][$profile]['type'] ) . ' Profile',
 ) );
 
 
@@ -130,7 +121,7 @@ $settings_form->add_setting( array(
 
 
 // Database Settings
-if ( 'files' != pb_backupbuddy::$options['profiles'][$profile]['type'] ) {
+if ( ( 'files' != pb_backupbuddy::$options['profiles'][$profile]['type'] ) && ( 'themes' != pb_backupbuddy::$options['profiles'][$profile]['type'] ) && ( 'plugins' != pb_backupbuddy::$options['profiles'][$profile]['type'] ) && ( 'media' != pb_backupbuddy::$options['profiles'][$profile]['type'] ) ) {
 	$settings_form->add_setting( array(
 			'type'		=>		'title',
 			'name'		=>		'title_database',
@@ -141,7 +132,7 @@ if ( 'files' != pb_backupbuddy::$options['profiles'][$profile]['type'] ) {
 
 
 // Full / Files Settings
-if ( ( 'full' == pb_backupbuddy::$options['profiles'][$profile]['type'] ) || ( 'files' == pb_backupbuddy::$options['profiles'][$profile]['type'] ) ){
+if ( 'db' != pb_backupbuddy::$options['profiles'][$profile]['type'] ) {
 	$settings_form->add_setting( array(
 			'type'		=>		'title',
 			'name'		=>		'title_files',
@@ -204,7 +195,7 @@ $settings_form->display_settings( 'Save Profile Settings' );
 
 if ( $profile > 2 ) {
 ?>
-<a style="float: right; margin-top: -35px; margin-right: 10px;" class="button secondary-button" title="Delete this Profile" href="admin.php?page=pb_backupbuddy_backup&delete_profile=<?php echo $profile; ?>" target="_blank" onclick="
+<a style="float: right; margin-top: -35px; margin-right: 10px;" class="button secondary-button" title="Delete this Profile" href="admin.php?page=pb_backupbuddy_backup&delete_profile=<?php echo $profile; ?>" target="_top" onclick="
 	if ( !confirm( 'Are you sure you want to delete this profile?' ) ) {
 		return false;
 	}

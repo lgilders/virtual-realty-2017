@@ -577,7 +577,7 @@ class backupbuddy_housekeeping {
 								}
 								
 								$backupCheckSpot = __( 'Select "View recently made backups" from the BackupBuddy Backups page to find this backup and view its log details and/or manually create a backup to test for problems.', 'it-l10n-backupbuddy' );
-								$sendCheckSpot = __( 'Select "View recently sent files" on the Remote Destinations page to find this backup and view its log details and/or manually create a backup to test for problems.', 'it-l10n-backupbuddy' );
+								$sendCheckSpot = __( 'Select "View recently sent files" on the Destinations page to find this backup and view its log details and/or manually create a backup to test for problems.', 'it-l10n-backupbuddy' );
 								
 								$timeoutMessage = '';
 								if ( '' != $timeoutStep ) {

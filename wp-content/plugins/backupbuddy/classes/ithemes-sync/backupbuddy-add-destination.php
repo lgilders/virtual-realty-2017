@@ -17,7 +17,6 @@ class Ithemes_Sync_Verb_Backupbuddy_Add_Destination extends Ithemes_Sync_Verb {
 		$newDestination = array();
 		$newDestination['title'] = $arguments['settings']['title'];
 		$newDestination['type'] = $arguments['settings']['type'];
-		backupbuddy_core::addNotification( 'destination_created', 'Remote destination created', 'A new remote destination "' . $newDestination['title'] . '" has been created.', $newDestination );
 		
 		$highest_destination_index = end( array_keys( pb_backupbuddy::$options['remote_destinations'] ) );
 		

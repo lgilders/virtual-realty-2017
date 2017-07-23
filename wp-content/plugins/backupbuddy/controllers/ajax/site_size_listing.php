@@ -26,9 +26,23 @@ echo '<!-- profile: ' . $profile_id . ' -->';
 $exclusions = backupbuddy_core::get_directory_exclusions( pb_backupbuddy::$options['profiles'][ $profile_id ] );
 $exclusion_profile_name = htmlentities( pb_backupbuddy::$options['profiles'][ $profile_id ]['title'] );
 
-$result = pb_backupbuddy::$filesystem->dir_size_map( ABSPATH, ABSPATH, $exclusions, $dir_array );
+$basedir = ABSPATH;
+if ( '' != pb_backupbuddy::$options['profiles'][ $profile_id ]['custom_root'] ) {
+	$basedir = backupbuddy_core::get_normalized_custom_root( pb_backupbuddy::$options['profiles'][ $profile_id ]['custom_root'] );
+}
+
+// Handle smart profile types.
+if ( pb_backupbuddy::$options['profiles'][ $profile_id ]['type'] == 'media' ) {
+	$basedir = backupbuddy_core::get_media_root();
+} elseif ( pb_backupbuddy::$options['profiles'][ $profile_id ]['type'] == 'themes' ) {
+	$basedir = backupbuddy_core::get_themes_root();
+} elseif ( pb_backupbuddy::$options['profiles'][ $profile_id ]['type'] == 'plugins' ) {
+	$basedir = backupbuddy_core::get_plugins_root();
+}
+
+$result = pb_backupbuddy::$filesystem->dir_size_map( $basedir, $basedir, $exclusions, $dir_array );
 if ( 0 == $result ) {
-	pb_backupbuddy::alert( 'Error #5656653. Unable to access directory map listing for directory `' . ABSPATH . '`.' );
+	pb_backupbuddy::alert( 'Error #5656653. Unable to access directory map listing for directory `' . $basedir . '`.' );
 	die();
 }
 $total_size = pb_backupbuddy::$options['stats']['site_size'] = $result[0];
@@ -57,11 +71,12 @@ if ( pb_backupbuddy::_GET( 'text' ) == 'true' ) {
 			word-break: break-all;
 		}
 	</style>
+	<b>Backup root for profile:</b> <?php echo $basedir; ?><br><br>
 	<table class="widefat striped backupbuddy_sizemap_table">
 		<thead>
 			<tr class="thead">
 				<?php
-					echo '<th>', __('Directory', 'it-l10n-backupbuddy' ), '</th>',
+					echo '<th>', __('Directory (relative to backup root)', 'it-l10n-backupbuddy' ), '</th>',
 						 '<th>', __('Size with Children', 'it-l10n-backupbuddy' ), '</th>',
 						 '<th>', __('Size with Exclusions', 'it-l10n-backupbuddy' ), '<br><span class="description">' . $exclusion_profile_name . ' profile</span></th>',
 						 '<th>', __('Children Count', 'it-l10n-backupbuddy' ), '<br><span class="description">(Files + Dirs)</span></th>',

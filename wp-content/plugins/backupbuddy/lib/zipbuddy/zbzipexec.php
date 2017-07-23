@@ -1170,7 +1170,7 @@ if ( !class_exists( "pluginbuddy_zbzipexec" ) ) {
 				
 					// Handle exclusions by placing them in an exclusion text file.
 					$exclusion_file = $tempdir . self::ZIP_EXCLUSIONS_FILE_NAME;
-					$this->_render_exclusions_file( $exclusion_file, $exclusions );
+					$this->_render_exclusions_file( $exclusion_file, $exclusions, $dir );
 					
 					pb_backupbuddy::status( 'details', sprintf( __( 'Using exclusion file `%1$s`', 'it-l10n-backupbuddy' ), $exclusion_file ) );
 					$command .= ' -x@' . "'{$exclusion_file}'";
