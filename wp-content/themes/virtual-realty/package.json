@@ -1,0 +1,14 @@
+{
+  "name": "virtual-realty",
+  "version": "1.0.0",
+  "description": "build process for virtual-realty theme",
+  "main": "index.php",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lori Gildersleeve (catty-wumpus.com)",
+  "license": "ISC",
+  "devDependencies": {
+    "gulp": "^3.9.1"
+  }
+}

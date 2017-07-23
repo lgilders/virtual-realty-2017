@@ -1,0 +1,20 @@
+{"event":"details","time":1494800724,"u":"66","run":"20.54","mem":"24.57","data":"----- Initiating master send function for BackupBuddy v7.3.1.2 for basename file: `list-tables-rtl.css`. Post-send deletion: "}
+{"event":"details","time":1494800724,"u":"67","run":"20.54","mem":"24.57","data":"Created fileoptions lock file `send-live_805c42c7f3ba281cbbe22133c044fbd5-zgn8s8.txt.lock` with ID: 59191194a38672.59045227."}
+{"event":"details","time":1494800724,"u":"67","run":"20.54","mem":"24.57","data":"Fileoptions load using 0 MB of memory."}
+{"event":"details","time":1494800724,"u":"67","run":"20.54","mem":"24.58","data":"Fileoptions `send-live_805c42c7f3ba281cbbe22133c044fbd5-zgn8s8.txt` saved. 3168 bytes written."}
+{"event":"details","time":1494800724,"u":"67","run":"20.54","mem":"24.57","data":"Initializing destination."}
+{"event":"details","time":1494800724,"u":"67","run":"20.54","mem":"24.57","data":"Loading destination init file `\/Users\/lgilders\/Sites\/virtual_realty\/wp-content\/plugins\/backupbuddy\/destinations\/live\/init.php`."}
+{"event":"details","time":1494800724,"u":"67","run":"20.54","mem":"24.57","data":"Destination init loaded."}
+{"event":"details","time":1494800724,"u":"67","run":"20.54","mem":"24.57","data":"Initialized `live` destination."}
+{"event":"details","time":1494800724,"u":"67","run":"20.55","mem":"24.57","data":"Applying destination-specific defaults."}
+{"event":"details","time":1494800724,"u":"67","run":"20.55","mem":"24.58","data":"Applying global destination defaults."}
+{"event":"details","time":1494800724,"u":"67","run":"20.55","mem":"24.58","data":"Calling destination-specific send method."}
+{"event":"details","time":1494800724,"u":"67","run":"20.55","mem":"24.59","data":"Starting S32 send()."}
+{"event":"details","time":1494800724,"u":"67","run":"20.55","mem":"24.60","data":"File size of `39 KB`."}
+{"event":"details","time":1494800724,"u":"67","run":"20.55","mem":"24.60","data":"Initiating multipart transfer."}
+{"event":"details","time":1494800724,"u":"74","run":"20.61","mem":"24.60","data":"Initiated multipart upload with ID `ESW3kkJqbF1Su5gLlulcoRLLAOgo9lX0qA4mNx1GYipScYKoprz_9CVBoZB4Ek4SUTk3UulolXTOW2yEj6AVKHmMIbAKw7ymWbmwA8a38n4Lp.cRAm6nK8UoS..MDm6.hgwHGJYIQUYhuKgxTjRuDA--`."}
+{"event":"details","time":1494800724,"u":"74","run":"20.62","mem":"24.61","data":"Multipart initiated; passing over to send first chunk this run. Burst size: `10 MB`."}
+{"event":"details","time":1494800724,"u":"74","run":"20.62","mem":"24.60","data":"Max time not set in settings so detecting server max PHP runtime."}
+{"event":"details","time":1494800724,"u":"74","run":"20.62","mem":"24.60","data":"Using max runtime: `30`."}
+{"event":"details","time":1494800724,"u":"74","run":"20.62","mem":"24.61","data":"About to read in part contents of part `1` of `1` parts of file `\/Users\/lgilders\/Sites\/virtual_realty\/wp-admin\/css\/list-tables-rtl.css` to remote location `rfGy0cA4Vo79gY3Y\/b8b6aef4cb2ab681df929514eec80cb3b455141b\/wp-admin\/css\/list-tables-rtl.css` with multipart ID `ESW3kkJqbF1Su5gLlulcoRLLAOgo9lX0qA4mNx1GYipScYKoprz_9CVBoZB4Ek4SUTk3UulolXTOW2yEj6AVKHmMIbAKw7ymWbmwA8a38n4Lp.cRAm6nK8UoS..MDm6.hgwHGJYIQUYhuKgxTjRuDA--`."}
+{"event":"details","time":1494800724,"u":"74","run":"20.62","mem":"24.65","data":"Beginning upload."}
