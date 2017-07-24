@@ -30,9 +30,11 @@ get_header(); ?>
             }
             ?>
 
-            <h2><?php the_field('directions_text'); ?></h2>
+            <p><?php the_field('directions_text'); ?></p>
 
             <div class="arrow">↓</div><!-- #hero -->
+
+            <h2><?php the_field('services_headline'); ?></h2>
 
             <?php if( have_rows('services') ): ?>
                 <ul id="services">
