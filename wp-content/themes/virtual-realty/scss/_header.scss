@@ -1,0 +1,23 @@
+header {
+  background-color: rgba(50, 50, 50, 0.65);
+  width: 100%;
+
+  .site-branding {
+    float: left;
+    padding: 20px 20px 10px;
+  }
+
+  #logo {
+    img {
+      max-height: 45px;
+
+    }
+  }
+
+  #site-navigation {
+    float: right;
+    width: initial;
+    clear: none;
+    padding: 30px;
+  }
+}
